@@ -107,7 +107,11 @@ func (tb *TelegramBot) parseMessage(msg *gotgbot.Message) models.Message {
 
 	if msg.ReplyToMessage != nil {
 		m.ReplyToSender = senderName(msg.ReplyToMessage.From)
-		m.ReplyToContent = msg.ReplyToMessage.Text
+		if msg.Quote != nil && msg.Quote.Text != "" {
+			m.ReplyToContent = msg.Quote.Text
+		} else {
+			m.ReplyToContent = msg.ReplyToMessage.Text
+		}
 	}
 
 	return m
