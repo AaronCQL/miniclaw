@@ -105,11 +105,11 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 	var mu sync.Mutex
 	var debounceTimer *time.Timer
 
-	onToolUse := func(toolName string) {
+	onToolUse := func(toolName, label string) {
 		mu.Lock()
 		defer mu.Unlock()
 
-		first := tracker.Add(toolName)
+		first := tracker.Add(toolName, label)
 
 		if first {
 			statusMsgID = a.bot.SendStatusMessage(input.ChatID, tracker.Render())

@@ -110,7 +110,9 @@ func (tb *TelegramBot) SendTyping(chatID int64) {
 // SendStatusMessage sends a plain text message and returns its message ID.
 // Returns 0 on error (best-effort).
 func (tb *TelegramBot) SendStatusMessage(chatID int64, text string) int64 {
-	msg, err := tb.bot.SendMessage(chatID, text, nil)
+	msg, err := tb.bot.SendMessage(chatID, text, &gotgbot.SendMessageOpts{
+		ParseMode: "HTML",
+	})
 	if err != nil {
 		log.Printf("[send] chat=%d failed to send status message: %v", chatID, err)
 		return 0
@@ -124,6 +126,7 @@ func (tb *TelegramBot) EditMessage(chatID, messageID int64, text string) {
 	_, _, err := tb.bot.EditMessageText(text, &gotgbot.EditMessageTextOpts{
 		ChatId:    chatID,
 		MessageId: messageID,
+		ParseMode: "HTML",
 	})
 	if err != nil {
 		log.Printf("[send] chat=%d msg=%d failed to edit status message: %v", chatID, messageID, err)

@@ -6,9 +6,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"miniclaw/internal/models"
@@ -40,11 +43,12 @@ type streamMessage struct {
 }
 
 type streamContent struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
+	Type  string                 `json:"type"`
+	Name  string                 `json:"name"`
+	Input map[string]interface{} `json:"input"`
 }
 
-func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUse func(toolName string)) (models.AgentOutput, error) {
+func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUse func(toolName, label string)) (models.AgentOutput, error) {
 	prompt := r.buildPrompt(input)
 
 	args := []string{
@@ -108,7 +112,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 			if onToolUse != nil && event.Message != nil {
 				for _, block := range event.Message.Content {
 					if block.Type == "tool_use" && block.Name != "" {
-						onToolUse(block.Name)
+						onToolUse(block.Name, toolLabel(block.Name, block.Input))
 					}
 				}
 			}
@@ -137,6 +141,54 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 		Result: result,
 		Status: "success",
 	}, nil
+}
+
+func toolLabel(name string, input map[string]interface{}) string {
+	getString := func(key string) string {
+		if v, ok := input[key]; ok {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+		return ""
+	}
+
+	switch name {
+	case "Read", "Edit", "Write":
+		if fp := getString("file_path"); fp != "" {
+			return codeTag(filepath.Base(fp))
+		}
+	case "Bash":
+		if cmd := getString("command"); cmd != "" {
+			if i := strings.IndexByte(cmd, '\n'); i >= 0 {
+				cmd = cmd[:i]
+			}
+			return codeTag(cmd)
+		}
+	case "Grep", "Glob":
+		if p := getString("pattern"); p != "" {
+			return codeTag(p)
+		}
+	case "WebSearch":
+		if q := getString("query"); q != "" {
+			return html.EscapeString(q)
+		}
+	case "WebFetch":
+		if u := getString("url"); u != "" {
+			if parsed, err := url.Parse(u); err == nil {
+				return html.EscapeString(parsed.Hostname())
+			}
+		}
+	case "Task":
+		if d := getString("description"); d != "" {
+			return html.EscapeString(d)
+		}
+	}
+	return ""
+}
+
+func codeTag(s string) string {
+	return "<code>" + html.EscapeString(s) + "</code>"
 }
 
 func (r *AgentRunner) buildPrompt(input models.AgentInput) string {
