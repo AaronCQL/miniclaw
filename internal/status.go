@@ -50,9 +50,9 @@ func (s *statusTracker) Render() string {
 
 	var text string
 	for i, e := range s.entries {
-		text += e.emoji + ": " + e.label
+		text += e.emoji + " " + e.label
 		if i < len(s.entries)-1 {
-			text += " 🟢\n"
+			text += "\n"
 		} else {
 			text += " 🟡"
 		}
@@ -68,7 +68,7 @@ func (s *statusTracker) RenderDone() string {
 
 	var text string
 	for _, e := range s.entries {
-		text += e.emoji + ": " + e.label + " 🟢\n"
+		text += e.emoji + " " + e.label + "\n"
 	}
 	return text
 }
