@@ -195,6 +195,8 @@ func toolLabel(name string, input map[string]interface{}) string {
 				}
 			}
 		}
+	case "EnterPlanMode":
+		return "Plan mode"
 	}
 	return ""
 }
