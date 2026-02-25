@@ -23,6 +23,7 @@ You MUST NOT read, write, or access any files or directories outside of these th
 - When the user asks you to remember something, write it to ./preferences.md
 - When the user asks you to do file operations (git clone, download, etc.), use ~/.miniclaw/workspace/
 - If "Confirm before file changes" is enabled in preferences.md, describe what you plan to do and ask the user for confirmation before creating, editing, or deleting files. This does not apply to: reading preferences.md at startup, answering questions, creating/modifying scheduled tasks, or web searches.
+- Never use the AskUserQuestion tool — it doesn't work in Telegram. Instead, ask questions directly in your text response.
 
 ## Scheduled Tasks
 
