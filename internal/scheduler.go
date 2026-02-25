@@ -61,7 +61,7 @@ func (s *Scheduler) executeDueTasks(ctx context.Context) {
 			if err != nil {
 				log.Printf("error parsing expires for task %s: %v", task.Filename, err)
 			} else if now.After(expires) {
-				log.Printf("[task] expired %s, deleting", task.Filename)
+				log.Printf("[task] expired %s (chat=%d type=%s/%s expires=%s prompt=%q), deleting", task.Filename, task.ChatID, task.ScheduleType, task.ScheduleValue, *task.Expires, task.Prompt)
 				s.deleteTask(task)
 				continue
 			}
@@ -93,7 +93,7 @@ func (s *Scheduler) executeDueTasks(ctx context.Context) {
 		// Delete one-time tasks, reschedule recurring ones
 		newNextRun := s.calculateNextRun(task)
 		if newNextRun == nil {
-			log.Printf("[task] completed %s, deleting", task.Filename)
+			log.Printf("[task] completed %s (chat=%d prompt=%q), deleting", task.Filename, task.ChatID, task.Prompt)
 			s.deleteTask(task)
 		} else {
 			log.Printf("[task] rescheduled %s next_run=%s", task.Filename, *newNextRun)
@@ -169,7 +169,9 @@ func (s *Scheduler) calculateNextRun(task models.Task) *string {
 func (s *Scheduler) deleteTask(task models.Task) {
 	path := filepath.Join(s.config.DataDir, "tasks", task.Filename)
 	if err := os.Remove(path); err != nil {
-		log.Printf("error deleting task file %s: %v", task.Filename, err)
+		log.Printf("[task] error deleting %s: %v", task.Filename, err)
+	} else {
+		log.Printf("[task] deleted %s", task.Filename)
 	}
 }
 
@@ -182,6 +184,8 @@ func (s *Scheduler) saveTask(task models.Task) {
 	}
 
 	if err := os.WriteFile(path, data, 0644); err != nil {
-		log.Printf("error writing task file %s: %v", task.Filename, err)
+		log.Printf("[task] error saving %s: %v", task.Filename, err)
+	} else {
+		log.Printf("[task] saved %s (status=%s next_run=%v)", task.Filename, task.Status, task.NextRun)
 	}
 }
