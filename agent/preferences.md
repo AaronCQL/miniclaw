@@ -14,5 +14,5 @@
 ## User Preferences
 
 - Use British English spelling (e.g. summarise, colour, behaviour, personalise)
-- Store plan files in plans/ at repo root (gitignored); always tell the user the file path when a plan is created
+- Store plan files in ~/.miniclaw/plans/; always tell the user the file path when a plan is created
 - For small file changes, show the exact addition/update in a code block after making it
