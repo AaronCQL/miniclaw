@@ -43,6 +43,11 @@ func (s *statusTracker) Add(toolName, label string) bool {
 		label = toolName
 	}
 
+	// Skip consecutive duplicates
+	if n := len(s.entries); n > 0 && s.entries[n-1].emoji == emoji && s.entries[n-1].label == label {
+		return false
+	}
+
 	first := len(s.entries) == 0
 	s.entries = append(s.entries, statusEntry{emoji: emoji, label: label})
 	return first
