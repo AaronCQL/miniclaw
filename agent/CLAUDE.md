@@ -49,6 +49,12 @@ Fields:
 - status: "active" or "paused"
 - next_run: ISO 8601 timestamp of next execution
 
+Timezone handling:
+- The user's preferred timezone is defined in preferences.md — always interpret user-specified times in that timezone unless they explicitly include a different one
+- Cron expressions are evaluated in the host's system local time, which may differ from the user's timezone — convert accordingly (e.g. if user wants 8am in UTC+8 but host is UTC, the cron hour should be 0)
+- next_run timestamps must include the correct UTC offset matching the user's timezone (e.g. +08:00 for UTC+8)
+- To determine the host's system timezone, run `date +%Z%:z`
+
 To list tasks, read the ~/.miniclaw/data/tasks/ directory.
 To cancel a task, delete its JSON file.
 To pause a task, set its status to "paused".

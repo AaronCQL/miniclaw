@@ -14,3 +14,4 @@
 ## User Preferences
 
 - Use British English spelling (e.g. summarise, colour, behaviour, personalise)
+- Store plan files in plans/ at repo root (gitignored)
