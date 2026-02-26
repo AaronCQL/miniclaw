@@ -21,11 +21,22 @@ Run these commands from the repo root:
 3. `git diff --staged` — to see any already-staged changes
 4. `git log --oneline -5` — to see recent commit style
 
-## Step 3: Analyse and report
+## Step 3: Review
+
+Do a comprehensive review of the diff. Look for:
+
+- Bugs, logic errors, or edge cases
+- Missing error handling
+- Performance concerns
+- Code style issues or inconsistencies with the rest of the codebase
+
+Report any findings. If nothing stands out, say the diff looks clean.
+
+## Step 4: Analyse and report
 
 For each changed file, briefly describe what changed and why.
 
-## Step 4: Suggest commits
+## Step 5: Suggest commits
 
 Group related changes into logical commits. For each suggested commit:
 
@@ -34,6 +45,6 @@ Group related changes into logical commits. For each suggested commit:
 
 If the working tree is clean, just say so.
 
-## Step 5: Ask to proceed
+## Step 6: Ask to proceed
 
 Ask the user if they want you to commit and push, or if they want to adjust the grouping.
