@@ -170,7 +170,9 @@ func (tb *TelegramBot) downloadFile(fileID, fileName, dstDir string) (string, er
 	if fileName == "" {
 		ext := filepath.Ext(file.FilePath)
 		if ext == "" {
-			ext = ".jpg"
+			ext = ".jpg" // default for photos with no extension
+		} else if ext == ".oga" {
+			ext = ".ogg" // Groq Whisper API doesn't accept .oga
 		}
 		fileName = file.FileUniqueId + ext
 	} else {

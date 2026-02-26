@@ -44,7 +44,9 @@ Before asking for configuration values, check if `~/.miniclaw/.env` already exis
 - `ALLOWED_CHAT_IDS`
 - `MINICLAW_AGENT_DIR`
 
-Hold onto these values. Steps 7–9 will only prompt for values that are missing or empty.
+Also check for `GROQ_API_KEY`.
+
+Hold onto these values. Steps 7–10 will only prompt for values that are missing or empty.
 
 ## Step 7: Telegram bot token
 
@@ -77,9 +79,21 @@ Otherwise, ask the user for their allowed Telegram chat IDs (comma-separated). T
 
 Hold onto the value for Step 10.
 
-## Step 10: Write .env file
+## Step 10: Groq API key (optional)
 
-If `~/.miniclaw/.env` already exists and all three values (`TELEGRAM_BOT_TOKEN`, `ALLOWED_CHAT_IDS`, `MINICLAW_AGENT_DIR`) are correct, report that the .env file is already up to date and skip writing.
+If `GROQ_API_KEY` already has a non-empty value in the existing .env, report that a key is already configured (show a masked version) and skip.
+
+Otherwise, tell the user:
+
+- This is optional but required for voice message transcription
+- Sign up at https://console.groq.com and create an API key
+- The free tier is generous (2,000 requests/day, 8 hours of audio/day)
+
+The user may skip this and add it later. Hold onto the value for Step 11.
+
+## Step 11: Write .env file
+
+If `~/.miniclaw/.env` already exists and all values (`TELEGRAM_BOT_TOKEN`, `ALLOWED_CHAT_IDS`, `MINICLAW_AGENT_DIR`, and optionally `GROQ_API_KEY`) are correct, report that the .env file is already up to date and skip writing.
 
 Otherwise, write `~/.miniclaw/.env` with the merged values (existing values for fields that didn't change, new values for fields that did):
 
@@ -87,11 +101,12 @@ Otherwise, write `~/.miniclaw/.env` with the merged values (existing values for 
 TELEGRAM_BOT_TOKEN=<token>
 ALLOWED_CHAT_IDS=<chat IDs>
 MINICLAW_AGENT_DIR=<absolute path to agent/>
+GROQ_API_KEY=<key, if provided>
 ```
 
 Use the Bash tool to write this file with `0600` permissions. Do NOT use the Write tool (the path is outside the project).
 
-## Step 11: Systemd service (optional)
+## Step 12: Systemd service (optional)
 
 First, check if `~/.config/systemd/user/miniclaw.service` already exists. If it does, read its contents and verify the `ExecStart` path is correct (matches `which miniclaw`).
 
@@ -99,7 +114,7 @@ First, check if `~/.config/systemd/user/miniclaw.service` already exists. If it 
 - If the service file exists but `ExecStart` is wrong, tell the user and offer to update it.
 - If the service file does not exist, ask the user if they want to set up systemd.
 
-If they decline systemd, skip to Step 12.
+If they decline systemd, skip to Step 13.
 
 To set up or update the service:
 
@@ -129,7 +144,7 @@ WantedBy=default.target
 6. Enable lingering so it runs even when the user is not logged in: `loginctl enable-linger`
 7. Ask if they want to start it now. If yes: `systemctl --user start miniclaw` and confirm it's running with `systemctl --user status miniclaw`.
 
-## Step 12: Done
+## Step 13: Done
 
 Print a summary:
 
