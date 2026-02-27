@@ -2,7 +2,7 @@
 name: setup
 description: Interactive setup wizard for new miniclaw users who just forked the repo
 disable-model-invocation: true
-allowed-tools: "Read, Edit, Bash(go *), Bash(which *), Bash(claude *), Bash(mkdir *), Bash(ls *), Bash(cat *), Bash(chmod *), Bash(systemctl *), Bash(loginctl *), Bash(curl *)"
+allowed-tools: "Read, Edit, Bash(go *), Bash(which *), Bash(claude *), Bash(mkdir *), Bash(ls *), Bash(cat *), Bash(chmod *), Bash(systemctl *), Bash(loginctl *), Bash(curl *), Bash(uname *), Bash(launchctl *)"
 ---
 
 # miniclaw Setup Wizard
@@ -106,15 +106,19 @@ GROQ_API_KEY=<key, if provided>
 
 Use the Bash tool to write this file with `0600` permissions. Do NOT use the Write tool (the path is outside the project).
 
-## Step 12: Systemd service (optional)
+## Step 12: Background service (optional)
 
-First, check if `~/.config/systemd/user/miniclaw.service` already exists. If it does, read its contents and verify the `ExecStart` path is correct (matches `which miniclaw`).
+First, detect the platform by running `uname -s`. If the result is `Darwin`, follow the **macOS (launchd)** path. Otherwise, follow the **Linux (systemd)** path.
+
+### Linux (systemd)
+
+Check if `~/.config/systemd/user/miniclaw.service` already exists. If it does, read its contents and verify the `ExecStart` path is correct (matches `which miniclaw`).
 
 - If the service file exists and is correct, report that systemd is already configured. Check if the service is enabled (`systemctl --user is-enabled miniclaw`) and skip to asking if they want to start/restart it.
 - If the service file exists but `ExecStart` is wrong, tell the user and offer to update it.
 - If the service file does not exist, ask the user if they want to set up systemd.
 
-If they decline systemd, skip to Step 13.
+If they decline, skip to Step 13.
 
 To set up or update the service:
 
@@ -144,6 +148,60 @@ WantedBy=default.target
 6. Enable lingering so it runs even when the user is not logged in: `loginctl enable-linger`
 7. Ask if they want to start it now. If yes: `systemctl --user start miniclaw` and confirm it's running with `systemctl --user status miniclaw`.
 
+### macOS (launchd)
+
+Check if `~/Library/LaunchAgents/com.miniclaw.agent.plist` already exists. If it does, read its contents and verify the `ProgramArguments` path is correct (matches `which miniclaw`).
+
+- If the plist exists and is correct, report that launchd is already configured. Check if it's loaded (`launchctl list | grep com.miniclaw.agent`) and skip to asking if they want to start/restart it.
+- If the plist exists but the binary path is wrong, tell the user and offer to update it.
+- If the plist does not exist, ask the user if they want to set up launchd.
+
+If they decline, skip to Step 13.
+
+To set up or update the service:
+
+1. Determine the absolute path to the `miniclaw` binary by running `which miniclaw` or falling back to `ls ~/go/bin/miniclaw`.
+2. Read `~/.miniclaw/.env` and parse all key-value pairs — these will become `EnvironmentVariables` in the plist.
+3. Run `mkdir -p ~/Library/LaunchAgents` (idempotent).
+4. Write `~/Library/LaunchAgents/com.miniclaw.agent.plist` via the Bash tool with the following content:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.miniclaw.agent</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string><absolute path to miniclaw binary></string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>TELEGRAM_BOT_TOKEN</key>
+        <string><value></string>
+        <key>ALLOWED_CHAT_IDS</key>
+        <string><value></string>
+        <key>MINICLAW_AGENT_DIR</key>
+        <string><value></string>
+        <!-- include GROQ_API_KEY if set -->
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/miniclaw.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/miniclaw.log</string>
+</dict>
+</plist>
+```
+
+5. If the service was previously loaded, unload it first: `launchctl unload ~/Library/LaunchAgents/com.miniclaw.agent.plist 2>/dev/null`
+6. Load the service: `launchctl load ~/Library/LaunchAgents/com.miniclaw.agent.plist`
+7. Verify it's running: `launchctl list | grep com.miniclaw.agent`
+
 ## Step 13: Register bot commands (optional)
 
 If `TELEGRAM_BOT_TOKEN` is configured, ask the user if they want to register bot commands with Telegram so they appear in the command menu when typing `/`.
@@ -172,7 +230,7 @@ Print a summary:
 Setup complete!
 ```
 
-If they set up systemd, add:
+If they set up systemd (Linux), add:
 
 ```
 miniclaw is running as a systemd user service.
@@ -182,7 +240,17 @@ miniclaw is running as a systemd user service.
   journalctl --user -u miniclaw -f   — follow logs
 ```
 
-If they skipped systemd, add:
+If they set up launchd (macOS), add:
+
+```
+miniclaw is running as a launchd agent.
+
+  launchctl list | grep com.miniclaw.agent   — check status
+  launchctl kickstart -k gui/$(id -u)/com.miniclaw.agent   — restart
+  tail -f /tmp/miniclaw.log   — follow logs
+```
+
+If they skipped the background service, add:
 
 ```
 To run miniclaw:
@@ -202,7 +270,7 @@ If they left ALLOWED_CHAT_IDS empty, remind them to:
 1. Start the bot without an allowlist (it will respond to anyone)
 2. Send `/chatid` to the bot
 3. Add the ID to `~/.miniclaw/.env`
-4. Restart the bot (or `systemctl --user restart miniclaw` if using systemd)
+4. Restart the bot
 
 ## Rules
 
