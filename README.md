@@ -1,22 +1,22 @@
 # miniclaw
 
-A minimal [Claude CLI](https://docs.anthropic.com/en/docs/claude-code) agent wrapper for Telegram.
+A minimal and easily hackable [OpenClaw](https://github.com/openclaw/openclaw) alternative.
 
 ## Philosophy
 
-miniclaw is deliberately small. The entire codebase fits in a single sitting of reading — no frameworks, no plugin systems, no abstractions you need to trace through. Fork it, read it, make it yours. Inspired by [nanoclaw](https://github.com/qwibitai/nanoclaw) and [picoclaw](https://github.com/sipeed/picoclaw).
+miniclaw is deliberately small — not just for simplicity, but because a small codebase means the agent can understand and modify its own source code at runtime.
+
+The entire project is a handful of Go files with only three dependencies (a Telegram library, a cron parser, and a dotenv loader). Claude can read, edit, and rebuild miniclaw on the fly — adding features, fixing bugs, or adapting its own behaviour to whatever you need, all through a conversation on Telegram. No plugin system required when your agent *is* the plugin system.
+
+Fork it, read it in one sitting, and make it yours.
 
 ## What it does
 
-- **Session persistence** — each chat maintains its own Claude conversation across restarts
-- **Scheduled tasks** — cron, interval, and one-shot tasks with auto-expiry, stored as simple JSON files
-- **Real-time status** — shows what tools Claude is using while it works, including todo progress
-- **Reply chains** — replies to bot messages include prior context
-- **Per-chat concurrency** — one agent per chat, no race conditions
-- **Chat allowlist** — restrict access to specific Telegram chat IDs via `ALLOWED_CHAT_IDS`
-- **File & image attachments** — send photos, documents, and other files directly to the bot
-- **Voice transcription** — voice messages are transcribed via Groq Whisper API and processed as text
-- **Skills** — extensible slash commands (`/diff`, `/restart`, `/setup`) with pass-through to built-in CLI commands (`/compact`, `/clear`, etc.)
+- Persistent sessions per chat, with reply context
+- Scheduled tasks (cron, interval, one-shot) as JSON files
+- File, image, and voice message support
+- Built-in and extensible skills via slash commands
+- Real-time status updates while the agent works
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ claude
 # then type: /setup
 ```
 
-The `/setup` command walks you through prerequisites, configuration, and optionally sets up a systemd service.
+The `/setup` command walks you through prerequisites, configuration, and optionally sets up a background service (systemd on Linux, launchd on macOS).
 
 ## Customisation
 
@@ -45,31 +45,10 @@ Edit these files to make the bot your own.
 
 ## Project structure
 
-```
-Repository                      Runtime (~/.miniclaw/)
-├── .claude/                    ├── .env
-│   └── skills/                 ├── data/
-│       ├── diff/               │   ├── sessions.json
-│       ├── restart/            │   └── tasks/
-│       ├── setup/              │       └── *.json
-│       └── transcribe/         └── workspace/
-├── agent/
-│   ├── CLAUDE.md
-│   └── preferences.md
-├── cmd/miniclaw/
-│   └── main.go
-├── internal/
-│   ├── app.go
-│   ├── config.go
-│   ├── models/
-│   ├── runner.go
-│   ├── scheduler.go
-│   ├── session.go
-│   ├── status.go
-│   └── telegram.go
-└── go.mod
-```
+The repo has two main concerns: the Go application that wraps Claude CLI, and the agent context that shapes how Claude behaves.
 
-## How it works
+- **`agent/`** — the agent's working directory, containing its system prompt (`CLAUDE.md`) and personality (`preferences.md`). This is where Claude runs from.
+- **`.claude/skills/`** — slash command definitions (e.g. `/diff`, `/setup`, `/restart`). Each skill is a markdown file that Claude follows as instructions.
+- **`cmd/`** and **`internal/`** — the Go application: Telegram polling, session management, task scheduling, and the Claude CLI runner.
 
-The bot long-polls Telegram for messages, runs each one through a Claude CLI subprocess, and streams tool usage back in real time as status updates. A background scheduler periodically checks for and executes due tasks.
+At runtime, all state lives in `~/.miniclaw/` — the `.env` config, session data, scheduled tasks, and a scratch workspace for file operations.
