@@ -14,17 +14,20 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
+// RunFunc runs an agent input through the per-chat queue, blocking until complete.
+type RunFunc func(ctx context.Context, input models.AgentInput) (models.AgentOutput, error)
+
 type Scheduler struct {
-	config      Config
-	agentRunner *AgentRunner
-	bot         *TelegramBot
+	config  Config
+	runFunc RunFunc
+	bot     *TelegramBot
 }
 
-func NewScheduler(cfg Config, agentRunner *AgentRunner, bot *TelegramBot) *Scheduler {
+func NewScheduler(cfg Config, runFunc RunFunc, bot *TelegramBot) *Scheduler {
 	return &Scheduler{
-		config:      cfg,
-		agentRunner: agentRunner,
-		bot:         bot,
+		config:  cfg,
+		runFunc: runFunc,
+		bot:     bot,
 	}
 }
 
@@ -78,10 +81,10 @@ func (s *Scheduler) executeDueTasks(ctx context.Context) {
 
 		log.Printf("[task] executing %s (chat=%d schedule=%s/%s)", task.Filename, task.ChatID, task.ScheduleType, task.ScheduleValue)
 
-		output, err := s.agentRunner.Run(ctx, models.AgentInput{
+		output, err := s.runFunc(ctx, models.AgentInput{
 			ChatID: task.ChatID,
 			Prompt: task.Prompt,
-		}, nil)
+		})
 
 		if err == nil && output.Result != "" {
 			s.bot.SendMessage(task.ChatID, output.Result)

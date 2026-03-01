@@ -5,17 +5,25 @@ import (
 	"log"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"miniclaw/internal/models"
 )
 
+// chatState holds a per-chat mutex to serialise agent runs,
+// plus the cancel func of the currently running agent (if any).
+type chatState struct {
+	mu     sync.Mutex
+	cancel atomic.Pointer[context.CancelFunc]
+}
+
 type App struct {
-	config       Config
-	bot          *TelegramBot
-	agentRunner  *AgentRunner
-	scheduler    *Scheduler
-	activeAgents sync.Map // map[int64]context.CancelFunc — chatID → cancel func
+	config    Config
+	bot       *TelegramBot
+	agentRunner *AgentRunner
+	scheduler *Scheduler
+	chats     sync.Map // map[int64]*chatState
 }
 
 func NewApp(cfg Config) *App {
@@ -36,7 +44,7 @@ func NewApp(cfg Config) *App {
 	a.bot.onCancel = a.cancelAgent
 	a.bot.onRestart = a.restartAgent
 
-	a.scheduler = NewScheduler(cfg, a.agentRunner, a.bot)
+	a.scheduler = NewScheduler(cfg, a.runQueuedTask, a.bot)
 
 	return a
 }
@@ -57,16 +65,14 @@ func (a *App) Start(ctx context.Context) error {
 	return nil
 }
 
+func (a *App) getChatState(chatID int64) *chatState {
+	val, _ := a.chats.LoadOrStore(chatID, &chatState{})
+	return val.(*chatState)
+}
+
 func (a *App) onMessage(msg models.Message) {
 	if !a.isAllowed(msg.ChatID) {
 		log.Printf("message from unauthorised chat %d, ignoring", msg.ChatID)
-		return
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	if _, loaded := a.activeAgents.LoadOrStore(msg.ChatID, cancel); loaded {
-		cancel()
-		log.Printf("agent already running for chat %d, ignoring message", msg.ChatID)
 		return
 	}
 
@@ -80,11 +86,32 @@ func (a *App) onMessage(msg models.Message) {
 		ReplyToFilePath: msg.ReplyToFilePath,
 	}
 
-	go a.startAgent(ctx, cancel, input)
+	go a.runQueued(input)
+}
+
+// runQueuedTask is the RunFunc used by the scheduler — acquires the mutex and runs the agent.
+func (a *App) runQueuedTask(ctx context.Context, input models.AgentInput) (models.AgentOutput, error) {
+	cs := a.getChatState(input.ChatID)
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+
+	return a.agentRunner.Run(ctx, input, nil)
+}
+
+// runQueued acquires the per-chat mutex, blocking until any prior agent finishes.
+func (a *App) runQueued(input models.AgentInput) {
+	cs := a.getChatState(input.ChatID)
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cs.cancel.Store(&cancel)
+	defer cs.cancel.Store(nil)
+
+	a.startAgent(ctx, cancel, input)
 }
 
 func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input models.AgentInput) {
-	defer a.activeAgents.Delete(input.ChatID)
 	defer cancel()
 
 	go func() {
@@ -188,10 +215,10 @@ func (a *App) restartAgent(chatID int64) {
 		return
 	}
 
-	if val, loaded := a.activeAgents.Load(chatID); loaded {
-		if cancel, ok := val.(context.CancelFunc); ok {
-			cancel()
-		}
+	// Cancel any running agent so the restart doesn't queue behind it.
+	cs := a.getChatState(chatID)
+	if fn := cs.cancel.Load(); fn != nil {
+		(*fn)()
 	}
 
 	a.bot.SendMessage(chatID, "Restarting miniclaw...")
@@ -201,24 +228,17 @@ func (a *App) restartAgent(chatID int64) {
 		Prompt: "/restart",
 	}
 
-	go func() {
-		ctx := context.Background()
-		_, err := a.agentRunner.Run(ctx, input, nil)
-		if err != nil {
-			log.Printf("restart agent error for chat %d: %v", chatID, err)
-		}
-	}()
+	go a.runQueued(input)
 }
 
 func (a *App) cancelAgent(chatID int64) {
-	val, loaded := a.activeAgents.Load(chatID)
-	if !loaded {
+	cs := a.getChatState(chatID)
+	fn := cs.cancel.Load()
+	if fn == nil {
 		a.bot.SendMessage(chatID, "Nothing to cancel.")
 		return
 	}
-	if cancel, ok := val.(context.CancelFunc); ok {
-		cancel()
-	}
+	(*fn)()
 }
 
 func (a *App) isAllowed(chatID int64) bool {
