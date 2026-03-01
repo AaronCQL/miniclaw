@@ -19,11 +19,11 @@ type chatState struct {
 }
 
 type App struct {
-	config    Config
-	bot       *TelegramBot
+	config      Config
+	bot         *TelegramBot
 	agentRunner *AgentRunner
-	scheduler *Scheduler
-	chats     sync.Map // map[int64]*chatState
+	scheduler   *Scheduler
+	chats       sync.Map // map[int64]*chatState
 }
 
 func NewApp(cfg Config) *App {

@@ -1,7 +1,7 @@
 ---
 name: diff
 description: Review git diff and suggest how to group and commit changes
-allowed-tools: "Bash(git *)"
+allowed-tools: "Bash(git *)", "Bash(gofmt *)", "Bash(go test *)"
 ---
 
 # Git Diff Review
@@ -21,7 +21,14 @@ Run these commands from the repo root:
 3. `git diff --staged` — to see any already-staged changes
 4. `git log --oneline -5` — to see recent commit style
 
-## Step 3: Review
+## Step 3: CI checks
+
+Run the same checks that CI runs:
+
+1. `gofmt -l .` — if any files are listed, run `gofmt -w` on them to fix formatting before continuing
+2. `go test ./...` — report any test failures
+
+## Step 4: Review
 
 Do a comprehensive review of the diff. Look for:
 
@@ -32,11 +39,11 @@ Do a comprehensive review of the diff. Look for:
 
 Report any findings. If nothing stands out, say the diff looks clean.
 
-## Step 4: Analyse and report
+## Step 5: Analyse and report
 
 For each changed file, briefly describe what changed and why.
 
-## Step 5: Suggest commits
+## Step 6: Suggest commits
 
 Group related changes into logical commits. For each suggested commit:
 
@@ -45,6 +52,6 @@ Group related changes into logical commits. For each suggested commit:
 
 If the working tree is clean, just say so.
 
-## Step 6: Ask to proceed
+## Step 7: Ask to proceed
 
 Ask the user if they want you to commit and push, or if they want to adjust the grouping.
