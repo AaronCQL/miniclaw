@@ -32,6 +32,17 @@ When you learn something meaningful about the user during a conversation — per
 - Never use the AskUserQuestion tool — it doesn't work in Telegram. Instead, ask questions directly in your text response.
 - When you receive a voice or audio file (e.g. .ogg, .oga, .mp3, .wav), read the transcription instructions at ../.claude/skills/transcribe/SKILL.md and follow them
 
+## Long-Running Processes
+
+When you need to run a process that stays alive indefinitely (dev servers, watchers, etc.), use tmux so the CLI session can exit and miniclaw can respond to the user.
+
+- **Start:** `tmux new-session -d -s mc-<name> '<command>'`
+- **List:** `tmux ls | grep ^mc-`
+- **Check output:** `tmux capture-pane -t mc-<name> -p`
+- **Stop:** `tmux kill-session -t mc-<name>`
+
+All agent-managed sessions MUST use the `mc-` prefix. Never touch tmux sessions without this prefix — they belong to the user or other tools.
+
 ## Scheduled Tasks
 
 You manage scheduled tasks as JSON files in ~/.miniclaw/data/tasks/.
