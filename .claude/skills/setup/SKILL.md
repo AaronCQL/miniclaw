@@ -126,8 +126,9 @@ If they decline, skip to Step 13.
 To set up or update the service:
 
 1. Determine the absolute path to the `miniclaw` binary by running `which miniclaw` or falling back to `ls ~/go/bin/miniclaw`.
-2. Run `mkdir -p ~/.config/systemd/user` (idempotent).
-3. Write `~/.config/systemd/user/miniclaw.service` via the Bash tool with the following content:
+2. Determine the directory where `claude` was found (from Step 1) — this is the only extra PATH entry needed since `miniclaw` is referenced by absolute path in `ExecStart` and Claude's Bash tool reads the user's shell profile for its own PATH.
+3. Run `mkdir -p ~/.config/systemd/user` (idempotent).
+4. Write `~/.config/systemd/user/miniclaw.service` via the Bash tool with the following content:
 
 ```ini
 [Unit]
@@ -138,6 +139,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 EnvironmentFile=%h/.miniclaw/.env
+Environment=PATH=<directory containing claude>:/usr/local/bin:/usr/bin:/bin
 ExecStart=<absolute path to miniclaw binary>
 Restart=on-failure
 RestartSec=5
@@ -146,10 +148,10 @@ RestartSec=5
 WantedBy=default.target
 ```
 
-4. Reload the systemd user daemon: `systemctl --user daemon-reload`
-5. Enable the service so it starts on login: `systemctl --user enable miniclaw`
-6. Enable lingering so it runs even when the user is not logged in: `loginctl enable-linger`
-7. Ask if they want to start it now. If yes: `systemctl --user start miniclaw` and confirm it's running with `systemctl --user status miniclaw`.
+5. Reload the systemd user daemon: `systemctl --user daemon-reload`
+6. Enable the service so it starts on login: `systemctl --user enable miniclaw`
+7. Enable lingering so it runs even when the user is not logged in: `loginctl enable-linger`
+8. Ask if they want to start it now. If yes: `systemctl --user start miniclaw` and confirm it's running with `systemctl --user status miniclaw`.
 
 ### macOS (launchd)
 
