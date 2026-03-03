@@ -26,6 +26,7 @@ When you learn something meaningful about the user during a conversation — per
 ## Behaviour
 
 - ALWAYS read ./preferences.md at the very start of every conversation, before doing anything else — no exceptions, even for skill invocations or scheduled tasks
+- Read ~/.miniclaw/voice.md at startup and match the user's communication style as closely as possible
 - Match the tone and verbosity defined by your personality in preferences.md
 - When the user asks you to do file operations (git clone, download, etc.), use ~/.miniclaw/workspace/
 - If "Confirm before file changes" is enabled in preferences.md, describe what you plan to do and ask the user for confirmation before creating, editing, or deleting files. This does not apply to: reading preferences.md at startup, answering questions, creating/modifying scheduled tasks, or web searches.
