@@ -6,7 +6,7 @@ allowed-tools: "Bash(curl *), Bash(ls *)"
 
 # Register Telegram Bot Commands
 
-Read all available skills and register them as Telegram bot commands via the `setMyCommands` API. This is idempotent — running it multiple times just overwrites the command list.
+Read all available skills and register them as Telegram bot commands via the `setMyCommands` API. This is idempotent. Running it multiple times just overwrites the command list.
 
 ## Step 1: Discover skills
 
@@ -22,9 +22,9 @@ For each directory found, read its `SKILL.md` file using the Read tool. Extract 
 
 Combine the discovered skills with these hardcoded commands that don't have SKILL.md files:
 
-- `chatid` — "Get your Telegram chat ID"
-- `cancel` — "Cancel the current request"
-- `compact` — "Compact conversation context to free up space"
+- `chatid`: "Get your Telegram chat ID"
+- `cancel`: "Cancel the current request"
+- `compact`: "Compact conversation context to free up space"
 
 Telegram command descriptions have a 256-character limit. Truncate any descriptions that exceed this.
 

@@ -16,17 +16,17 @@ Start your response by stating the absolute path of the git repo root (run `git 
 
 Run these commands from the repo root:
 
-1. `git status` — to see all modified, staged, and untracked files
-2. `git diff` — to see unstaged changes
-3. `git diff --staged` — to see any already-staged changes
-4. `git log --oneline -5` — to see recent commit style
+1. `git status`: to see all modified, staged, and untracked files
+2. `git diff`: to see unstaged changes
+3. `git diff --staged`: to see any already-staged changes
+4. `git log --oneline -5`: to see recent commit style
 
 ## Step 3: CI checks
 
 Run the same checks that CI runs:
 
-1. `gofmt -l .` — if any files are listed, run `gofmt -w` on them to fix formatting before continuing
-2. `go test ./...` — report any test failures
+1. `gofmt -l .`: if any files are listed, run `gofmt -w` on them to fix formatting before continuing
+2. `go test ./...`: report any test failures
 
 ## Step 4: Review
 
