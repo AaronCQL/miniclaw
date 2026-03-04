@@ -15,12 +15,12 @@ You are helping a new user set up miniclaw after forking the repo. Walk through 
 
 Run these checks silently and report the results as a checklist:
 
-1. **Go** — run `which go` and `go version`. If `which go` fails, check `~/go/bin/go` and `/usr/local/go/bin/go`. Require Go 1.23+.
-2. **Claude CLI** — run `which claude`. If that fails, check these common paths: `~/.claude/local/claude`, `/usr/local/bin/claude`, `~/.npm-global/bin/claude`. Once found, report the path and run `<path> --version`. This is required for the agent runtime. Assume the user is authenticated since they are already using Claude to set it up — do not run any Claude commands yourself as it will fail.
+1. **Go** -run `which go` and `go version`. If `which go` fails, check `~/go/bin/go` and `/usr/local/go/bin/go`. Require Go 1.23+.
+2. **Claude CLI** -run `which claude`. If that fails, check these common paths: `~/.claude/local/claude`, `/usr/local/bin/claude`, `~/.npm-global/bin/claude`. Once found, report the path and run `<path> --version`. This is required for the agent runtime. Assume the user is authenticated since they are already using Claude to set it up -do not run any Claude commands yourself as it will fail.
 
 If any prerequisite is missing, tell the user what to fix and stop. Do not continue until all checks pass.
 
-**Important:** Remember the directories where `go` and `claude` were found — these will be needed for the PATH in the launchd plist (macOS) in Step 12.
+**Important:** Remember the directories where `go` and `claude` were found -these will be needed for the PATH in the launchd plist (macOS) in Step 12.
 
 ## Step 2: Install Go dependencies
 
@@ -32,7 +32,7 @@ Run `go install ./cmd/miniclaw/` to compile and install the `miniclaw` binary to
 
 ## Step 4: Create runtime directories
 
-Run `mkdir -p ~/.miniclaw/{data/tasks,workspace}` — this is already idempotent. Report that the runtime directory structure is ready.
+Run `mkdir -p ~/.miniclaw/{data/tasks,workspace}` -this is already idempotent. Report that the runtime directory structure is ready.
 
 ## Step 5: Personalise agent
 
@@ -48,7 +48,7 @@ Before asking for configuration values, check if `~/.miniclaw/.env` already exis
 
 Also check for `GROQ_API_KEY`.
 
-Hold onto these values. Steps 7–10 will only prompt for values that are missing or empty.
+Hold onto these values. Steps 7-10 will only prompt for values that are missing or empty.
 
 ## Step 7: Telegram bot token
 
@@ -126,7 +126,7 @@ If they decline, skip to Step 13.
 To set up or update the service:
 
 1. Determine the absolute path to the `miniclaw` binary by running `which miniclaw` or falling back to `ls ~/go/bin/miniclaw`.
-2. Determine the directory where `claude` was found (from Step 1) — this is the only extra PATH entry needed since `miniclaw` is referenced by absolute path in `ExecStart` and Claude's Bash tool reads the user's shell profile for its own PATH.
+2. Determine the directory where `claude` was found (from Step 1) -this is the only extra PATH entry needed since `miniclaw` is referenced by absolute path in `ExecStart` and Claude's Bash tool reads the user's shell profile for its own PATH.
 3. Run `mkdir -p ~/.config/systemd/user` (idempotent).
 4. Write `~/.config/systemd/user/miniclaw.service` via the Bash tool with the following content:
 
@@ -166,7 +166,7 @@ If they decline, skip to Step 13.
 To set up or update the service:
 
 1. Determine the absolute path to the `miniclaw` binary by running `which miniclaw` or falling back to `ls ~/go/bin/miniclaw`.
-2. Read `~/.miniclaw/.env` and parse all key-value pairs — these will become `EnvironmentVariables` in the plist.
+2. Read `~/.miniclaw/.env` and parse all key-value pairs -these will become `EnvironmentVariables` in the plist.
 3. Build a `PATH` value that includes the directories where `go`, `claude`, and `miniclaw` were found (from Step 1 and above), plus standard paths: `/usr/local/bin`, `/usr/bin`, `/bin`, `/usr/sbin`, `/sbin`. Deduplicate entries.
 4. Run `mkdir -p ~/Library/LaunchAgents` (idempotent).
 5. Write `~/Library/LaunchAgents/com.miniclaw.agent.plist` via the Bash tool with the following content:
@@ -216,9 +216,9 @@ If `TELEGRAM_BOT_TOKEN` is configured, ask the user if they want to register bot
 
 If they agree, run the `/commands` skill: read all SKILL.md files in `.claude/skills/*/SKILL.md`, extract the `name` and `description` from each frontmatter, and combine them with these hardcoded commands:
 
-- `chatid` — "Get your Telegram chat ID"
-- `cancel` — "Cancel the current request"
-- `compact` — "Compact conversation context to free up space"
+- `chatid` -"Get your Telegram chat ID"
+- `cancel` -"Cancel the current request"
+- `compact` -"Compact conversation context to free up space"
 
 Then call the Telegram API:
 
@@ -243,9 +243,9 @@ If they set up systemd (Linux), add:
 ```
 miniclaw is running as a systemd user service.
 
-  systemctl --user status miniclaw   — check status
-  systemctl --user restart miniclaw  — restart after config changes
-  journalctl --user -u miniclaw -f   — follow logs
+  systemctl --user status miniclaw   -check status
+  systemctl --user restart miniclaw  -restart after config changes
+  journalctl --user -u miniclaw -f   -follow logs
 ```
 
 If they set up launchd (macOS), add:
@@ -253,9 +253,9 @@ If they set up launchd (macOS), add:
 ```
 miniclaw is running as a launchd agent.
 
-  launchctl list | grep com.miniclaw.agent   — check status
-  launchctl kickstart -k gui/$(id -u)/com.miniclaw.agent   — restart
-  tail -f /tmp/miniclaw.log   — follow logs
+  launchctl list | grep com.miniclaw.agent   -check status
+  launchctl kickstart -k gui/$(id -u)/com.miniclaw.agent   -restart
+  tail -f /tmp/miniclaw.log   -follow logs
 ```
 
 If they skipped the background service, add:
@@ -282,8 +282,8 @@ If they left ALLOWED_CHAT_IDS empty, remind them to:
 
 ## Rules
 
-- **Idempotent** — never overwrite existing valid files or values; check first, act only if needed
+- **Idempotent** -never overwrite existing valid files or values; check first, act only if needed
 - Be concise and friendly
-- Do NOT proceed past a failed step — fix it first
+- Do NOT proceed past a failed step -fix it first
 - Do NOT print raw commands unless the user asks to see them
-- Do NOT modify any repo files except `agent/preferences.md` — only create/update `~/.miniclaw/.env` and edit preferences
+- Do NOT modify any repo files except `agent/preferences.md` -only create/update `~/.miniclaw/.env` and edit preferences
