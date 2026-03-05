@@ -17,17 +17,20 @@ import (
 // RunFunc runs an agent input through the per-chat queue, blocking until complete.
 type RunFunc func(ctx context.Context, input models.AgentInput) (models.AgentOutput, error)
 
+// SendOutputFunc sends agent output (files + text) to a chat.
+type SendOutputFunc func(chatID int64, result string)
+
 type Scheduler struct {
-	config  Config
-	runFunc RunFunc
-	bot     *TelegramBot
+	config     Config
+	runFunc    RunFunc
+	sendOutput SendOutputFunc
 }
 
-func NewScheduler(cfg Config, runFunc RunFunc, bot *TelegramBot) *Scheduler {
+func NewScheduler(cfg Config, runFunc RunFunc, sendOutput SendOutputFunc) *Scheduler {
 	return &Scheduler{
-		config:  cfg,
-		runFunc: runFunc,
-		bot:     bot,
+		config:     cfg,
+		runFunc:    runFunc,
+		sendOutput: sendOutput,
 	}
 }
 
@@ -87,7 +90,7 @@ func (s *Scheduler) executeDueTasks(ctx context.Context) {
 		})
 
 		if err == nil && output.Result != "" {
-			s.bot.SendMessage(task.ChatID, output.Result)
+			s.sendOutput(task.ChatID, output.Result)
 		} else if err != nil {
 			log.Printf("[task] error running %s: %v", task.Filename, err)
 		}

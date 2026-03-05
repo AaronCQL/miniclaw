@@ -44,7 +44,7 @@ func NewApp(cfg Config) *App {
 	a.bot.onCancel = a.cancelAgent
 	a.bot.onRestart = a.restartAgent
 
-	a.scheduler = NewScheduler(cfg, a.runQueuedTask, a.bot)
+	a.scheduler = NewScheduler(cfg, a.runQueuedTask, a.sendAgentOutput)
 
 	return a
 }
@@ -203,9 +203,34 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 	}
 
 	if output.Result != "" {
-		if err := a.bot.SendMessage(input.ChatID, output.Result); err != nil {
-			log.Printf("error sending message to chat %d: %v", input.ChatID, err)
+		a.sendAgentOutput(input.ChatID, output.Result)
+	}
+}
+
+// sendAgentOutput checks for an outbox.json, sends any listed files, then sends the text.
+func (a *App) sendAgentOutput(chatID int64, result string) {
+	outboxPath := filepath.Join(a.config.HomeDir, "outbox.json")
+	entries, err := ReadOutbox(outboxPath)
+	if err != nil {
+		log.Printf("[outbox] chat=%d error reading outbox: %v", chatID, err)
+	}
+
+	if len(entries) > 0 {
+		allowedDirs := []string{a.config.WorkspaceDir, a.config.AgentDir}
+		for _, entry := range entries {
+			if err := ValidateOutboxEntry(entry, allowedDirs); err != nil {
+				log.Printf("[outbox] chat=%d skipping %s: %v", chatID, entry.Path, err)
+				continue
+			}
+			if err := a.bot.SendFile(chatID, entry.Path, entry.Caption); err != nil {
+				log.Printf("[outbox] chat=%d failed to send %s: %v", chatID, entry.Path, err)
+			}
 		}
+		RemoveOutbox(outboxPath)
+	}
+
+	if err := a.bot.SendMessage(chatID, result); err != nil {
+		log.Printf("error sending message to chat %d: %v", chatID, err)
 	}
 }
 

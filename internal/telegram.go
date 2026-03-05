@@ -254,6 +254,29 @@ func (tb *TelegramBot) SendReply(chatID int64, replyToMessageID int64, text stri
 	return err
 }
 
+// SendFile sends a local file to the chat as a document (preserves original quality).
+func (tb *TelegramBot) SendFile(chatID int64, filePath string, caption string) error {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("opening file %s: %w", filePath, err)
+	}
+	defer f.Close()
+
+	fileName := filepath.Base(filePath)
+	opts := &gotgbot.SendDocumentOpts{}
+	if caption != "" {
+		opts.Caption = caption
+		opts.ParseMode = "HTML"
+	}
+
+	_, err = tb.bot.SendDocument(chatID, gotgbot.InputFileByReader(fileName, f), opts)
+	if err != nil {
+		return fmt.Errorf("sending file %s: %w", fileName, err)
+	}
+	log.Printf("[send] chat=%d file=%s", chatID, fileName)
+	return nil
+}
+
 func (tb *TelegramBot) SendMessage(chatID int64, text string) error {
 	if text == "" {
 		return nil
