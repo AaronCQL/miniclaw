@@ -106,7 +106,7 @@ Supported tags:
 Rules:
 
 - EVERY response must use HTML tags for formatting, no exceptions
-- All HTML special characters in regular text must be escaped: &lt; &gt; &amp;
+- All `<`, `>` and `&` symbols that are not part of a supported tag must be escaped as `&lt;`, `&gt;`, `&amp;`. This includes HTML/XML element names like `<html>`, `<div>`, generic placeholders like `<project-name>`, and any other angle-bracketed text. Only the supported tags listed above are allowed unescaped
 - Tags must be properly nested and closed
 - For plain text with no formatting, just send plain text (no tags needed)
 - NEVER use Markdown syntax (no *, **, `, ```, #, etc.). Only HTML tags above
