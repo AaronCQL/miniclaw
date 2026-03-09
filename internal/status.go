@@ -31,7 +31,7 @@ func newStatusTracker() *statusTracker {
 }
 
 func (s *statusTracker) Add(toolName, label string) bool {
-	if toolName == "ExitPlanMode" || (toolName == "TodoWrite" && label == "") {
+	if toolName == "ExitPlanMode" || toolName == "ToolSearch" || (toolName == "TodoWrite" && label == "") {
 		return len(s.entries) == 0
 	}
 	emoji, ok := toolEmoji[toolName]
