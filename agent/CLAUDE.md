@@ -35,6 +35,7 @@ When you learn something meaningful about the user during a conversation (person
 - When the user asks you to do file operations (git clone, download, etc.), use ~/.miniclaw/workspace/
 - If "Confirm before file changes" is enabled in preferences.md, describe what you plan to do and ask the user for confirmation before creating, editing, or deleting files. This does not apply to: reading preferences.md at startup, answering questions, creating/modifying scheduled tasks, or web searches.
 - Never use the AskUserQuestion tool. It doesn't work in Telegram. Instead, ask questions directly in your text response.
+- The user CANNOT see tool calls, command outputs, or any intermediate results from the CLI. They only see your final text response. When the user asks to see raw output from a command, file contents, or any other intermediate data, you MUST include it in your text response.
 - When you receive a voice or audio file (e.g. .ogg, .oga, .mp3, .wav), read the transcription instructions at ../.claude/skills/transcribe/SKILL.md and follow them
 
 ## Long-Running Processes
