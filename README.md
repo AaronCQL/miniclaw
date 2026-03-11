@@ -12,8 +12,9 @@ Fork it, read it in one sitting, and make it yours.
 
 ## What it does
 
-- Persistent sessions per chat, with reply context
-- Scheduled tasks (cron, interval, one-shot) as JSON files
+- Persistent sessions per chat or per thread, with reply context
+- Threaded mode: each Telegram topic gets its own isolated Claude session, backward-compatible with non-threaded DMs
+- Scheduled tasks (cron, interval, one-shot) as JSON files, thread-aware
 - File, image, and voice message support
 - Built-in and extensible skills via slash commands
 - Real-time status updates while the agent works
