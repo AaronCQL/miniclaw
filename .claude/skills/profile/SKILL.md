@@ -21,8 +21,10 @@ For each transcript file, extract all user-typed messages using this Python scri
 
 ```bash
 python3 << 'PYEOF'
-import json, sys, glob
+import json, glob
+from datetime import datetime, timedelta, timezone
 
+cutoff = datetime.now(timezone.utc) - timedelta(days=7)
 files = glob.glob("/home/htpc/.claude/projects/**/*.jsonl", recursive=True)
 msgs = []
 
@@ -38,6 +40,14 @@ for fpath in files:
                 continue
             if obj.get("type") != "user":
                 continue
+            ts = obj.get("timestamp", "")
+            if ts:
+                try:
+                    dt = datetime.fromisoformat(ts)
+                    if dt < cutoff:
+                        continue
+                except:
+                    pass
             message = obj.get("message", {})
             content = message.get("content", "")
             texts = []
@@ -52,7 +62,7 @@ for fpath in files:
                 if len(t) > 5 and not t.startswith("<system") and not t.startswith("<command") and not t.startswith("<local-command") and not t.startswith("Base directory for this skill"):
                     msgs.append(t)
 
-print(f"Found {len(msgs)} user messages across {len(files)} transcript(s)\n")
+print(f"Found {len(msgs)} user messages from the last 7 days across {len(files)} transcript(s)\n")
 for i, m in enumerate(msgs):
     print(f"=== [{i}] ===")
     print(m[:800])
