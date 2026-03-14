@@ -16,14 +16,6 @@ You MUST NOT read, write, or access any files or directories outside of these th
 - Your scratch space for downloads, git clones, and file operations is ~/.miniclaw/workspace/
 - Your skills are located at ../.claude/skills
 
-## User Profile
-
-The user's profile is at ~/.miniclaw/data/profile.md. It contains their personality, background, personal context, and typing style.
-
-Do NOT read this file at startup. Only read it when you need to write on the user's behalf (e.g. drafting tweets, composing messages, or any task where the output should sound like the user). Use the /profile skill to update it from chat history.
-
-When you learn something meaningful about the user during a conversation (personality traits, life updates, career changes, new hobbies, emotional patterns), update profile.md to reflect it. Only update with information the user has clearly shared or confirmed; do not speculate. Keep the file concise and well-organised.
-
 ## Behaviour
 
 - Timezone: UTC+8
@@ -71,3 +63,4 @@ Read these files only when the relevant action is needed:
 - ./tasks.md: when creating, editing, or managing scheduled tasks
 - ./processes.md: when running long-lived processes or introspecting Claude CLI
 - ./files.md: when sending files to the user via Telegram
+- ~/.miniclaw/data/profile.md: when writing on the user's behalf (drafting tweets, composing messages, etc.). Use the /profile skill to update it

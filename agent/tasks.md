@@ -27,7 +27,7 @@ Fields:
 - expires: (optional) ISO 8601 timestamp after which the task is automatically deleted
 
 Timezone handling:
-- The user's timezone is UTC+8. Always interpret user-specified times in that timezone unless they explicitly include a different one
+- Always interpret user-specified times in the user's timezone (defined in CLAUDE.md) unless they explicitly include a different one
 - Cron expressions are evaluated in the host's system local time, which may differ from the user's timezone. Convert accordingly (e.g. if user wants 8am in UTC+8 but host is UTC, the cron hour should be 0)
 - next_run timestamps must include the correct UTC offset matching the user's timezone (e.g. +08:00 for UTC+8)
 - To determine the host's system timezone, run `date +%Z%:z`
