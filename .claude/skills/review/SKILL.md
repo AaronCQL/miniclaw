@@ -1,5 +1,5 @@
 ---
-name: diff
+name: review
 description: Review git diff and suggest how to group and commit changes
 allowed-tools: "Bash(git *)", "Bash(gofmt *)", "Bash(go test *)"
 ---
