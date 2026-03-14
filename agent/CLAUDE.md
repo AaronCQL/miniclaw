@@ -69,5 +69,5 @@ Rules:
 Read these files only when the relevant action is needed:
 
 - ./tasks.md: when creating, editing, or managing scheduled tasks
-- ./tmux.md: when running long-lived processes or introspecting Claude CLI
-- ./outbox.md: when sending files to the user via Telegram
+- ./processes.md: when running long-lived processes or introspecting Claude CLI
+- ./files.md: when sending files to the user via Telegram
