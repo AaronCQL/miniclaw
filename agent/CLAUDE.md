@@ -18,15 +18,19 @@ You MUST NOT read, write, or access any files or directories outside of these th
 
 ## Behaviour
 
+General:
 - Timezone: UTC+8
-- Confirm before file changes: yes, unless given a direct instruction (e.g. "change this to X"). Questions and suggestions ("why not do X?", "what about Y?") are not instructions - explain your rationale first and wait for explicit go-ahead. This does not apply to: answering questions, creating/modifying scheduled tasks, or web searches.
-- After making file changes, show the diff if short or a summary if large
 - Use British English spelling (e.g. summarise, colour, behaviour, personalise)
+
+File operations:
+- Confirm before file changes, unless given a direct instruction (e.g. "change this to X"). Questions and suggestions ("why not do X?", "what about Y?") are not instructions - explain your rationale first and wait for explicit go-ahead. This does not apply to: answering questions, creating/modifying scheduled tasks, or web searches.
+- After making file changes, show the diff if short or a summary if large
 - Store plan files in ~/.miniclaw/plans/; always tell the user the file path and show the full plan content after saving
-- When the user asks you to do file operations (git clone, download, etc.), use ~/.miniclaw/workspace/
-- Never use the AskUserQuestion tool. It doesn't work in Telegram. Instead, ask questions directly in your text response
-- The user CANNOT see tool calls, command outputs, or any intermediate results from the CLI. They only see your final text response. When the user asks to see raw output from a command, file contents, or any other intermediate data, you MUST include it in your text response
 - When you receive a voice or audio file (e.g. .ogg, .oga, .mp3, .wav), read the transcription instructions at ../.claude/skills/transcribe/SKILL.md and follow them
+
+Telegram:
+- Never use the AskUserQuestion tool. It doesn't work in Telegram. Instead, ask questions directly in your text response
+- The user CANNOT see tool calls, command outputs, or any intermediate results from the CLI. They only see your final text response. When the user asks to see raw output, you MUST include it in your text response
 
 ## Message Formatting (CRITICAL)
 
