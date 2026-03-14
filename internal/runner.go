@@ -65,22 +65,17 @@ type streamContent struct {
 func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUse func(toolName, label string)) (models.AgentOutput, error) {
 	prompt := r.buildPrompt(input)
 
-	args := []string{
-		"--print",
-		"--verbose", // required by Claude CLI when using stream-json with --print
-		"--output-format", "stream-json",
-		"--dangerously-skip-permissions",
-	}
+	binary, args := r.buildCommand(input)
 
 	sessionID := r.sessions.Get(input.ChatID, input.ThreadID)
-	if sessionID != "" {
+	if input.Backend != "gemini" && sessionID != "" {
 		log.Printf("[agent] chat=%d thread=%d resuming session=%s", input.ChatID, input.ThreadID, sessionID)
 		args = append(args, "--resume", sessionID)
 	} else {
-		log.Printf("[agent] chat=%d thread=%d starting new session", input.ChatID, input.ThreadID)
+		log.Printf("[agent] chat=%d thread=%d starting new session (backend=%s)", input.ChatID, input.ThreadID, binary)
 	}
 
-	cmd := exec.CommandContext(ctx, "claude", args...)
+	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Dir = r.config.AgentDir
 	cmd.Stdin = strings.NewReader(prompt)
 	cmd.Env = append(os.Environ(),
@@ -149,7 +144,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 		return models.AgentOutput{Status: "error", Error: stderr.String()}, err
 	}
 
-	if resultSessionID != "" {
+	if resultSessionID != "" && input.Backend != "gemini" {
 		r.sessions.SetIfAbsent(input.ChatID, input.ThreadID, resultSessionID)
 	}
 
@@ -158,6 +153,32 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 		Result: result,
 		Status: "success",
 	}, nil
+}
+
+func (r *AgentRunner) buildCommand(input models.AgentInput) (binary string, args []string) {
+	if input.Backend == "gemini" {
+		args = []string{
+			"-p",
+			"--output-format", "stream-json",
+			"--sandbox",
+		}
+		if input.Model != "" {
+			args = append(args, "-m", input.Model)
+		}
+		return "gemini", args
+	}
+
+	// Default: Claude CLI
+	args = []string{
+		"--print",
+		"--verbose",
+		"--output-format", "stream-json",
+		"--dangerously-skip-permissions",
+	}
+	if input.Model != "" {
+		args = append(args, "--model", input.Model)
+	}
+	return "claude", args
 }
 
 func toolLabel(name string, input map[string]any) string {
