@@ -1,11 +1,11 @@
 ---
 name: profile
-description: Analyse chat history to update user profile (user.md)
+description: Analyse chat history to update user profile and voice guide (profile.md)
 ---
 
 # Profile Update
 
-Go through all conversation transcripts, extract user messages, and update the user profile with new observations.
+Go through all conversation transcripts, extract user messages, and update the user profile with new observations about who the user is and how they type.
 
 ## Step 1: Find transcripts
 
@@ -70,27 +70,34 @@ for i, m in enumerate(msgs):
 PYEOF
 ```
 
-This output will be large. Skim through all of it to build a full picture.
+This output will be large. Skim through all of it to build a full picture of both WHAT the user is saying and HOW they type.
 
 ## Step 3: Read current profile
 
-Read `~/.miniclaw/data/user.md` to understand what's already captured.
+Read `~/.miniclaw/data/profile.md` to understand what's already captured.
 
 ## Step 4: Analyse and update
 
-Compare what's in the messages against what's already in the profile. Look for:
+Compare the messages against what's already in the profile. Look for:
 
+**Profile (who they are):**
 - New personality traits or behavioural patterns
 - Life updates (career changes, new hobbies, relationship developments)
 - Updated opinions or preferences
 - New blind spots or growth areas observed
-- Anything that's changed since the profile was last written
 
-Only update with information the user has clearly stated or demonstrated across multiple messages. Do not speculate or over-interpret single messages.
+**Voice (how they type):**
+- New abbreviations or slang not yet captured
+- Shifts in tone or formality
+- New expressions or verbal tics
+- Patterns that were wrong or overstated in the current guide
+- Changes in emoji usage, punctuation habits, or sentence structure
+
+Only update with information the user has clearly stated or demonstrated across multiple messages. Do not speculate or over-index on one-off phrasing.
 
 ## Step 5: Apply changes
 
-Edit user.md with the updates. Keep it concise and well-organised. Do not duplicate existing entries.
+Edit `~/.miniclaw/data/profile.md` with the updates. Keep it concise and well-organised. Do not duplicate existing entries.
 
 ## Step 6: Report
 
