@@ -86,6 +86,8 @@ func (s *Scheduler) executeDueTasks(ctx context.Context) {
 			ChatID:   task.ChatID,
 			ThreadID: task.ThreadID,
 			Prompt:   task.Prompt,
+			Model:    task.Model,
+			Backend:  task.Backend,
 		})
 
 		if err == nil && output.Result != "" {
