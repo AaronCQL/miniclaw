@@ -60,17 +60,17 @@ Group commits by type and write a changelog entry:
 ```markdown
 ## [vX.Y.Z] - YYYY-MM-DD
 
-### Added
-- feat: description
+### Features
+- description (from feat: commits)
 
-### Fixed
-- fix: description
+### Bug Fixes
+- description (from fix: commits)
 
-### Changed
-- refactor/chore/docs: description
+### Improvements
+- description (from refactor:, chore:, docs:, style: commits)
 ```
 
-Only include sections that have entries. Use the commit message as-is (they already follow conventional commit format). Strip the prefix (feat:, fix:, etc.) from the description.
+Only include sections that have entries. Strip the conventional commit prefix (feat:, fix:, etc.) from each description.
 
 ## Step 5: Update CHANGELOG.md
 
