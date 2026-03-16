@@ -14,13 +14,15 @@ Infer which repo the user is working with from the conversation context. If uncl
 
 Run `git rev-parse --show-toplevel` to confirm it's a valid git repo. Start your response by stating the absolute path.
 
-## Step 2: Ensure clean state on primary branch
+## Step 2: Ensure on primary branch
 
 ```sh
-cd <repo-root> && BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || git branch -l main master --format '%(refname:short)' | head -1) && echo "BASE: $BASE" && git checkout $BASE && git pull && git status
+cd <repo-root> && BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || git branch -l main master --format '%(refname:short)' | head -1) && CURRENT=$(git branch --show-current) && echo "BASE: $BASE" && echo "CURRENT: $CURRENT" && git pull && git status
 ```
 
-If the working tree is dirty, stop and tell the user to commit or stash first.
+If not on the primary branch, stop and tell the user to switch first.
+
+If the working tree is dirty, list the uncommitted changes and ask the user if they want to commit everything before proceeding. If yes, stage all changes, commit with an appropriate message, and continue.
 
 ## Step 3: Determine version
 
@@ -99,7 +101,7 @@ After confirmation:
 git add CHANGELOG.md
 git commit -m "chore: release vX.Y.Z"
 git tag vX.Y.Z
-git push && git push --tags
+git push --follow-tags
 ```
 
 Then create a GitHub release:

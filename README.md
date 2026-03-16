@@ -2,7 +2,8 @@
 
 A minimal Telegram agent powered by [Claude Code](https://docs.anthropic.com/en/docs/claude-code), designed to be self-modifiable.
 
-> **Note:** miniclaw is pre-v1. Breaking changes may occur on minor version bumps.
+> [!WARNING]
+> miniclaw is pre-v1. Breaking changes may occur on minor version bumps.
 
 ## Why miniclaw?
 
