@@ -9,7 +9,13 @@ allowed-tools: "Read, Edit, Bash(go *), Bash(which *), Bash(claude *), Bash(mkdi
 
 You are helping a new user set up miniclaw after forking the repo. Walk through each step below **in order**. Check prerequisites first, then guide the user through configuration.
 
-**Idempotency rule:** This wizard MUST be safe to run multiple times. Before creating or writing any file, check if it already exists and whether its contents are correct. Never overwrite existing valid configuration. Only prompt the user for values that are missing or empty.
+## Rules
+
+- **Idempotent**: this wizard MUST be safe to run multiple times. Before creating or writing any file, check if it already exists and whether its contents are correct. Never overwrite existing valid configuration. Only prompt the user for values that are missing or empty
+- Be concise and friendly
+- Do NOT proceed past a failed step. Fix it first
+- Do NOT print raw commands unless the user asks to see them
+- Do NOT modify any repo files except `agent/CLAUDE.md`. Only create/update `~/.miniclaw/.env` and the agent config
 
 ## Step 1: Check prerequisites
 
@@ -36,7 +42,7 @@ Run `mkdir -p ~/.miniclaw/{data/tasks,workspace}`. This is already idempotent. R
 
 ## Step 5: Personalise agent
 
-Read `agent/preferences.md` and show the user the current Name and Timezone values. Ask if they want to change either one. Only edit the file if they request a change.
+Read `agent/CLAUDE.md` and show the user the current bot name (on line 3, e.g. "You are Enki") and timezone (under `Behaviour > General`). Ask if they want to change either one. Only edit the file if they request a change.
 
 ## Step 6: Read existing .env (if any)
 
@@ -280,10 +286,3 @@ If they left ALLOWED_CHAT_IDS empty, remind them to:
 3. Add the ID to `~/.miniclaw/.env`
 4. Restart the bot
 
-## Rules
-
-- **Idempotent**: never overwrite existing valid files or values. Check first, act only if needed
-- Be concise and friendly
-- Do NOT proceed past a failed step. Fix it first
-- Do NOT print raw commands unless the user asks to see them
-- Do NOT modify any repo files except `agent/preferences.md`. Only create/update `~/.miniclaw/.env` and edit preferences
