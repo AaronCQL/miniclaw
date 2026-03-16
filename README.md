@@ -2,6 +2,9 @@
 
 A minimal Telegram agent powered by [Claude Code](https://docs.anthropic.com/en/docs/claude-code), designed to be self-modifiable.
 
+> [!WARNING]
+> miniclaw is pre-v1. Breaking changes may occur on minor version bumps.
+
 ## Why miniclaw?
 
 1. **Official Engine**: Powered directly by [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Get Anthropic's state-of-the-art tool-use, codebase awareness, and memory management out of the box, with zero maintenance and automatic updates.
@@ -54,6 +57,7 @@ Skills are slash commands the agent follows as expert instructions. Use `/comman
 | `/transcribe` | Transcribe voice messages via Groq Whisper | Auto (on voice message) |
 | `/setup` | Interactive first-time setup wizard | One-time |
 | `/commands` | Register bot commands with Telegram | One-time |
+| `/release` | Create a semver release with changelog and GitHub release | On demand |
 | `/migrate` | Migrate session context into current thread | On demand |
 
 Skills accept arguments where noted (e.g. `/remember 7d`, `/voice all`). Scheduling is done by telling the agent to create a task (e.g. "run /remember every day at 3:45am").
