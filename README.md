@@ -41,19 +41,36 @@ claude
 
 Once your bot is running, use `/commands` on Telegram to sync the agent's skills with Telegram and to see all available commands.
 
+## Skills
+
+Skills are slash commands the agent follows as expert instructions. Use `/commands` on Telegram to sync them.
+
+| Skill | Description | Recommended Schedule |
+|-------|-------------|---------------------|
+| `/review` | Review git diff, suggest commits | Twice daily |
+| `/remember` | Summarise conversations into cross-thread memory | Daily |
+| `/voice` | Update typing style guide from chat history | Weekly |
+| `/tweets` | Suggest tweet ideas from recent conversations | Daily |
+| `/compact` | Compact conversation context | Daily |
+| `/transcribe` | Transcribe voice messages via Groq Whisper | Auto (on voice message) |
+| `/setup` | Interactive first-time setup wizard | One-time |
+| `/commands` | Register bot commands with Telegram | One-time |
+| `/migrate` | Migrate session context into current thread | On demand |
+
+Skills accept arguments where noted (e.g. `/remember 7d`, `/voice all`). Scheduling is done by telling the agent to create a task (e.g. "run /remember every day at 3:45am").
+
 ## Customisation
 
-- **`agent/preferences.md`**: your bot's name, personality, timezone, and any preferences you tell it to remember
 - **`agent/CLAUDE.md`**: the system prompt that defines agent behaviour, sandbox rules, and message formatting
 
-Ask your agent to edit these files to make it your own.
+Ask your agent to edit this file to make it your own.
 
 ## Project structure
 
 The repo has two main concerns: the Go application that wraps Claude CLI, and the agent context that shapes how Claude behaves.
 
-- **`agent/`**: the agent's working directory, containing its system prompt (`CLAUDE.md`) and personality (`preferences.md`). This is where Claude runs from.
-- **`.claude/skills/`**: slash command definitions (e.g. `/diff`, `/setup`, `/restart`). Each skill is a directory containing a `SKILL.md` file that the agent follows as expert instructions.
+- **`agent/`**: the agent's working directory, containing its system prompt (`CLAUDE.md`) and on-demand reference docs. This is where Claude runs from.
+- **`.claude/skills/`**: slash command definitions (e.g. `/review`, `/remember`, `/setup`). Each skill is a directory containing a `SKILL.md` file that the agent follows as expert instructions.
 - **`cmd/`** and **`internal/`**: the Go application. Telegram polling, session management, task scheduling, and the Claude CLI runner.
 
 At runtime, all state lives in `~/.miniclaw/`: the `.env` config, session data, scheduled tasks, and a scratch workspace for file operations.

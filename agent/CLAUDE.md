@@ -67,4 +67,4 @@ Read these files only when the relevant action is needed:
 - ./tasks.md: when creating, editing, or managing scheduled tasks
 - ./processes.md: when running long-lived processes or introspecting Claude CLI
 - ./files.md: when sending files to the user via Telegram
-- ~/.miniclaw/data/profile.md: when writing on the user's behalf (drafting tweets, composing messages, etc.). Use the /profile skill to update it
+- voice.md (in auto memory): when writing on the user's behalf (drafting tweets, composing messages, etc.). Use the /voice skill to update it
