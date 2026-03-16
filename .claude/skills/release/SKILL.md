@@ -106,7 +106,7 @@ After confirmation:
 git add CHANGELOG.md
 git commit -m "chore: release vX.Y.Z"
 git tag vX.Y.Z
-git push --follow-tags
+git push && git push --tags
 ```
 
 Then create a GitHub release:
