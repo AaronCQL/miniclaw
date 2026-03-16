@@ -101,7 +101,7 @@ The user may skip this and add it later. Hold onto the value for Step 11.
 
 ## Step 11: Write .env file
 
-If `~/.miniclaw/.env` already exists and all values (`TELEGRAM_BOT_TOKEN`, `ALLOWED_CHAT_IDS`, `MINICLAW_AGENT_DIR`, and optionally `GROQ_API_KEY` and `SHOW_STATUS_UPDATES`) are correct, report that the .env file is already up to date and skip writing.
+If `~/.miniclaw/.env` already exists and all values (`TELEGRAM_BOT_TOKEN`, `ALLOWED_CHAT_IDS`, `MINICLAW_AGENT_DIR`, and optionally `GROQ_API_KEY`) are correct, report that the .env file is already up to date and skip writing.
 
 Otherwise, write `~/.miniclaw/.env` with the merged values (existing values for fields that didn't change, new values for fields that did):
 
@@ -110,7 +110,6 @@ TELEGRAM_BOT_TOKEN=<token>
 ALLOWED_CHAT_IDS=<chat IDs>
 MINICLAW_AGENT_DIR=<absolute path to agent/>
 GROQ_API_KEY=<key, if provided>
-SHOW_STATUS_UPDATES=false
 ```
 
 Use the Bash tool to write this file with `0600` permissions. Do NOT use the Write tool (the path is outside the project).
