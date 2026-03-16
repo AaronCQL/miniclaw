@@ -53,7 +53,6 @@ Skills are slash commands the agent follows as expert instructions. Use `/comman
 | `/review` | Review git diff, suggest commits | Twice daily |
 | `/remember` | Summarise conversations into cross-thread memory | Daily |
 | `/voice` | Update typing style guide from chat history | Weekly |
-| `/tweets` | Suggest tweet ideas from recent conversations | Daily |
 | `/compact` | Compact conversation context | Daily |
 | `/transcribe` | Transcribe voice messages via Groq Whisper | Auto (on voice message) |
 | `/setup` | Interactive first-time setup wizard | One-time |
