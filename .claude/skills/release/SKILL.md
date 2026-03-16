@@ -32,9 +32,9 @@ Find the latest semver tag:
 git tag -l 'v*' --sort=-v:refname | head -1
 ```
 
-If no tags exist, the first release is `v0.1.0`.
+If no tags exist, the first release is `v0.1.0`. Use a brief "Initial release" changelog entry instead of listing every commit.
 
-Infer the next version by scanning commit messages since the last tag (or all commits if no tag exists):
+For subsequent releases, infer the next version by scanning commit messages since the last tag:
 
 ```sh
 git log <last-tag>..HEAD --oneline
