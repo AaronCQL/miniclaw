@@ -89,7 +89,6 @@ Prepend the new entry after the header (newest first). Keep all previous entries
 Show the user:
 - The proposed version
 - The full changelog entry
-- The list of commits included
 
 Ask for confirmation before proceeding.
 
