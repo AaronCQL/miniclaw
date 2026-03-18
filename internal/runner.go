@@ -72,8 +72,9 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 		"--dangerously-skip-permissions",
 	}
 
-	sessionID := r.sessions.Get(input.ChatID, input.ThreadID)
-	if sessionID != "" {
+	if input.IsolatedSession {
+		log.Printf("[agent] chat=%d thread=%d starting isolated session", input.ChatID, input.ThreadID)
+	} else if sessionID := r.sessions.Get(input.ChatID, input.ThreadID); sessionID != "" {
 		log.Printf("[agent] chat=%d thread=%d resuming session=%s", input.ChatID, input.ThreadID, sessionID)
 		args = append(args, "--resume", sessionID)
 	} else {
@@ -149,7 +150,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 		return models.AgentOutput{Status: "error", Error: stderr.String()}, err
 	}
 
-	if resultSessionID != "" {
+	if resultSessionID != "" && !input.IsolatedSession {
 		r.sessions.SetIfAbsent(input.ChatID, input.ThreadID, resultSessionID)
 	}
 

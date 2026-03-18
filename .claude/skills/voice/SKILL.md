@@ -106,4 +106,4 @@ Edit `~/.claude/projects/-home-htpc-Desktop-dev-miniclaw/memory/voice.md` with t
 
 ## Step 6: Report
 
-Tell the user what was added or changed, and why. Ask if anything should be adjusted.
+Start your response with "/voice summary" so the user knows which skill produced this output. Then tell the user what was added or changed, and why.

@@ -156,7 +156,7 @@ Rules:
 
 ## Step 6: Report
 
-Tell the user:
+Start your response with "/remember summary" so the user knows which skill produced this output. Then tell the user:
 - What was added or updated
 - What was removed as stale
 - Current MEMORY.md line count
