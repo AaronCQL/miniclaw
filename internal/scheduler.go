@@ -83,9 +83,9 @@ func (s *Scheduler) executeDueTasks(ctx context.Context) {
 		log.Printf("[task] executing %s (chat=%d schedule=%s/%s)", task.Filename, task.ChatID, task.ScheduleType, task.ScheduleValue)
 
 		output, err := s.runFunc(ctx, models.AgentInput{
-			ChatID:       task.ChatID,
-			ThreadID:     task.ThreadID,
-			Prompt:       task.Prompt,
+			ChatID:          task.ChatID,
+			ThreadID:        task.ThreadID,
+			Prompt:          task.Prompt,
 			IsolatedSession: task.IsolatedSession,
 		})
 
