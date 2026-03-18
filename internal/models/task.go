@@ -10,4 +10,5 @@ type Task struct {
 	Status        string  `json:"status"` // "active", "paused"
 	NextRun       *string `json:"next_run"`
 	Expires       *string `json:"expires,omitempty"`
+	IsolatedSession  bool    `json:"isolated_session,omitempty"`
 }

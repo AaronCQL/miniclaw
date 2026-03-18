@@ -25,6 +25,7 @@ Fields:
 - status: "active" or "paused"
 - next_run: ISO 8601 timestamp of next execution
 - expires: (optional) ISO 8601 timestamp after which the task is automatically deleted
+- isolated_session: (optional) if true, run in an isolated throwaway session that is neither resumed nor saved. Use for skills that don't need conversation context (e.g. /remember, /voice)
 
 Timezone handling:
 - Always interpret user-specified times in the user's timezone (defined in CLAUDE.md) unless they explicitly include a different one

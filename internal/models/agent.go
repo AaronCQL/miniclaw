@@ -9,6 +9,7 @@ type AgentInput struct {
 	ReplyToSender   string // who sent the message being replied to (empty if not a reply)
 	ReplyToContent  string // content of the message being replied to (empty if not a reply)
 	ReplyToFilePath string // local path to replied-to message's attachment, if any
+	IsolatedSession    bool   // run in an isolated throwaway session, don't resume or save
 }
 
 type AgentOutput struct {
