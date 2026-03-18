@@ -59,6 +59,7 @@ Rules:
 - Newlines are preserved as-is (no &lt;br&gt; needed)
 - Bullet point style: •
 - Never use em dashes or en dashes. Use hyphens instead
+- Tables: Telegram does not render HTML tables or Markdown tables. When presenting tabular data, use a &lt;pre&gt; code block with manually aligned columns instead
 
 ## On-Demand References
 
