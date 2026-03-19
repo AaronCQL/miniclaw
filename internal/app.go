@@ -203,7 +203,13 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 		if statusMsgID != 0 {
 			a.bot.EditMessage(input.ChatID, statusMsgID, tracker.RenderDone()+"❌ Error")
 		}
-		a.bot.SendMessage(input.ChatID, input.ThreadID, "Sorry, I encountered an error. Check logs for details.")
+		var errMsg string
+		if output.Error != "" {
+			errMsg = "Sorry, I encountered an error.\n\n<pre>" + output.Error + "</pre>"
+		} else {
+			errMsg = "Sorry, I encountered an unknown error. Check logs for details."
+		}
+		a.bot.SendMessage(input.ChatID, input.ThreadID, errMsg)
 		return
 	}
 
