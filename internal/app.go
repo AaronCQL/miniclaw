@@ -30,7 +30,7 @@ type App struct {
 	agentRunner *AgentRunner
 	scheduler   *Scheduler
 	chats       sync.Map // map[int64]*chatState
-	showStatus  atomic.Bool
+	statusLevel atomic.Value
 }
 
 func NewApp(cfg Config) *App {
@@ -40,7 +40,7 @@ func NewApp(cfg Config) *App {
 	a.agentRunner = NewAgentRunner(cfg, sessions)
 
 	settings := LoadSettings(cfg.DataDir)
-	a.showStatus.Store(settings.ShowStatus)
+	a.statusLevel.Store(settings.StatusLevel)
 
 	bot, err := NewTelegramBot(cfg.TelegramToken, filepath.Join(cfg.WorkspaceDir, "files"), a.onMessage)
 	if err != nil {
@@ -186,17 +186,23 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 		mu.Lock()
 		defer mu.Unlock()
 
+		tracker.AddText(text)
+
 		if statusMsgID == 0 {
+			lastStatusText = tracker.Render()
+			statusMsgID = a.bot.SendStatusMessage(input.ChatID, input.ThreadID, lastStatusText)
 			return
 		}
 
-		tracker.AddText(text)
 		scheduleStatusUpdate()
 	}
 
 	var toolCallback func(string, string)
 	var textCallback func(string)
-	if a.showStatus.Load() {
+	switch a.statusLevel.Load().(string) {
+	case StatusThinking:
+		textCallback = onText
+	case StatusVerbose:
 		toolCallback = onToolUse
 		textCallback = onText
 	}
@@ -304,15 +310,29 @@ func (a *App) toggleLogs(chatID, threadID int64) {
 	if !a.isAllowed(chatID) {
 		return
 	}
-	enabled := !a.showStatus.Load()
-	a.showStatus.Store(enabled)
+
+	var next string
+	switch a.statusLevel.Load().(string) {
+	case StatusOff:
+		next = StatusThinking
+	case StatusThinking:
+		next = StatusVerbose
+	default:
+		next = StatusOff
+	}
+
+	a.statusLevel.Store(next)
 	s := LoadSettings(a.config.DataDir)
-	s.ShowStatus = enabled
+	s.StatusLevel = next
 	SaveSettings(a.config.DataDir, s)
-	if enabled {
-		a.bot.SendMessage(chatID, threadID, "✅ Status updates enabled.")
-	} else {
-		a.bot.SendMessage(chatID, threadID, "🔕 Status updates disabled.")
+
+	switch next {
+	case StatusOff:
+		a.bot.SendMessage(chatID, threadID, "🔕 Status updates off.")
+	case StatusThinking:
+		a.bot.SendMessage(chatID, threadID, "💭 Status: thinking.")
+	case StatusVerbose:
+		a.bot.SendMessage(chatID, threadID, "🔍 Status: verbose.")
 	}
 }
 

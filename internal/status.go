@@ -55,7 +55,7 @@ func (s *statusTracker) AddText(text string) {
 	s.entries = append(s.entries, statusEntry{emoji: "", label: text})
 }
 
-func (s *statusTracker) Render() string {
+func (s *statusTracker) renderEntries(showSpinner bool) string {
 	if len(s.entries) == 0 {
 		return ""
 	}
@@ -65,15 +65,23 @@ func (s *statusTracker) Render() string {
 		if e.emoji != "" {
 			b.WriteString(e.emoji + " " + e.label)
 		} else {
-			b.WriteString("\n<i>" + e.label + "</i>")
+			// Separate text from preceding tool entries with a blank line
+			if i > 0 && s.entries[i-1].emoji != "" {
+				b.WriteString("\n")
+			}
+			b.WriteString("<i>" + e.label + "</i>")
 		}
 		if i < len(s.entries)-1 {
 			b.WriteString("\n")
-		} else if e.emoji != "" {
+		} else if showSpinner && e.emoji != "" {
 			b.WriteString(" 🟡")
 		}
 	}
 	return b.String()
+}
+
+func (s *statusTracker) Render() string {
+	return s.renderEntries(true)
 }
 
 // DropText strips the final response from status since it's sent as a separate message.
@@ -87,22 +95,7 @@ func (s *statusTracker) DropText(text string) {
 }
 
 func (s *statusTracker) RenderDone() string {
-	if len(s.entries) == 0 {
-		return ""
-	}
-
-	var b strings.Builder
-	for i, e := range s.entries {
-		if e.emoji != "" {
-			b.WriteString(e.emoji + " " + e.label)
-		} else {
-			b.WriteString("\n<i>" + e.label + "</i>")
-		}
-		if i < len(s.entries)-1 {
-			b.WriteString("\n")
-		}
-	}
-	return b.String()
+	return s.renderEntries(false)
 }
 
 func (s *statusTracker) RenderFinal() string {
