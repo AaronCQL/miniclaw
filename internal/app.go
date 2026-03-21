@@ -145,55 +145,47 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 	var debounceTimer *time.Timer
 	var lastStatusText string
 
+	flushStatus := func() {
+		mu.Lock()
+		text := tracker.Render()
+		changed := text != lastStatusText
+		if changed {
+			lastStatusText = text
+		}
+		msgID := statusMsgID
+		mu.Unlock()
+		if !changed {
+			return
+		}
+		if msgID != 0 {
+			a.bot.EditMessage(input.ChatID, msgID, text)
+		} else {
+			mu.Lock()
+			if statusMsgID == 0 {
+				statusMsgID = a.bot.SendStatusMessage(input.ChatID, input.ThreadID, text)
+			}
+			mu.Unlock()
+		}
+	}
+
 	scheduleStatusUpdate := func() {
 		if debounceTimer != nil {
 			debounceTimer.Stop()
 		}
-		debounceTimer = time.AfterFunc(1*time.Second, func() {
-			mu.Lock()
-			text := tracker.Render()
-			changed := text != lastStatusText
-			if changed {
-				lastStatusText = text
-			}
-			mu.Unlock()
-			if changed {
-				a.bot.EditMessage(input.ChatID, statusMsgID, text)
-			}
-		})
+		debounceTimer = time.AfterFunc(250*time.Millisecond, flushStatus)
 	}
 
 	onToolUse := func(toolName, label string) {
 		mu.Lock()
 		defer mu.Unlock()
-
-		first := tracker.Add(toolName, label)
-
-		if first {
-			lastStatusText = tracker.Render()
-			statusMsgID = a.bot.SendStatusMessage(input.ChatID, input.ThreadID, lastStatusText)
-			return
-		}
-
-		if statusMsgID == 0 {
-			return
-		}
-
+		tracker.Add(toolName, label)
 		scheduleStatusUpdate()
 	}
 
 	onText := func(text string) {
 		mu.Lock()
 		defer mu.Unlock()
-
 		tracker.AddText(text)
-
-		if statusMsgID == 0 {
-			lastStatusText = tracker.Render()
-			statusMsgID = a.bot.SendStatusMessage(input.ChatID, input.ThreadID, lastStatusText)
-			return
-		}
-
 		scheduleStatusUpdate()
 	}
 
@@ -239,7 +231,11 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 
 	if statusMsgID != 0 {
 		tracker.DropText(output.Result)
-		a.bot.EditMessage(input.ChatID, statusMsgID, tracker.RenderFinal())
+		if final := tracker.RenderFinal(); final != "" {
+			a.bot.EditMessage(input.ChatID, statusMsgID, final)
+		} else {
+			a.bot.DeleteMessage(input.ChatID, statusMsgID)
+		}
 	}
 
 	if output.Result != "" {
@@ -328,11 +324,11 @@ func (a *App) toggleLogs(chatID, threadID int64) {
 
 	switch next {
 	case StatusOff:
-		a.bot.SendMessage(chatID, threadID, "🔕 Status updates off.")
+		a.bot.SendMessage(chatID, threadID, "🔕 Logs: off.")
 	case StatusThinking:
-		a.bot.SendMessage(chatID, threadID, "💭 Status: thinking.")
+		a.bot.SendMessage(chatID, threadID, "💭 Logs: thinking only.")
 	case StatusVerbose:
-		a.bot.SendMessage(chatID, threadID, "🔍 Status: verbose.")
+		a.bot.SendMessage(chatID, threadID, "🔍 Logs: verbose (thinking and actions).")
 	}
 }
 

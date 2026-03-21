@@ -268,6 +268,13 @@ func (tb *TelegramBot) EditMessage(chatID, messageID int64, text string) {
 	}
 }
 
+func (tb *TelegramBot) DeleteMessage(chatID, messageID int64) {
+	_, err := tb.bot.DeleteMessage(chatID, messageID, nil)
+	if err != nil {
+		log.Printf("[send] chat=%d msg=%d failed to delete message: %v", chatID, messageID, err)
+	}
+}
+
 func (tb *TelegramBot) SendReply(chatID, threadID, replyToMessageID int64, text string) error {
 	if text == "" {
 		return nil

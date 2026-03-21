@@ -134,7 +134,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 						onToolUse(block.Name, toolLabel(block.Name, block.Input))
 					}
 					if block.Type == "text" && block.Text != "" && onText != nil {
-						onText(block.Text)
+						onText(strings.TrimSpace(block.Text))
 					}
 				}
 			}

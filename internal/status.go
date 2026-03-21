@@ -65,8 +65,7 @@ func (s *statusTracker) renderEntries(showSpinner bool) string {
 		if e.emoji != "" {
 			b.WriteString(e.emoji + " " + e.label)
 		} else {
-			// Separate text from preceding tool entries with a blank line
-			if i > 0 && s.entries[i-1].emoji != "" {
+			if i > 0 {
 				b.WriteString("\n")
 			}
 			b.WriteString("<i>" + e.label + "</i>")
