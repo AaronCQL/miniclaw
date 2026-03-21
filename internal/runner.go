@@ -68,7 +68,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 
 	args := []string{
 		"--print",
-		"--verbose",
+		"--verbose", // required by Claude CLI when using stream-json with --print
 		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
 	}
