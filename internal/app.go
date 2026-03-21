@@ -232,6 +232,7 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 	}
 
 	if statusMsgID != 0 {
+		tracker.DropText(output.Result)
 		a.bot.EditMessage(input.ChatID, statusMsgID, tracker.RenderFinal())
 	}
 

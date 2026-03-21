@@ -77,6 +77,17 @@ func (s *statusTracker) Render() string {
 	return b.String()
 }
 
+// DropText removes the last text entry (empty emoji) that matches the given text.
+// Used to strip the final response from status before rendering, since it's sent separately.
+func (s *statusTracker) DropText(text string) {
+	for i := len(s.entries) - 1; i >= 0; i-- {
+		if s.entries[i].emoji == "" && s.entries[i].label == text {
+			s.entries = append(s.entries[:i], s.entries[i+1:]...)
+			return
+		}
+	}
+}
+
 // RenderDone returns all entries as completed. Used as a base for final/cancel/error states.
 func (s *statusTracker) RenderDone() string {
 	if len(s.entries) == 0 {
@@ -84,11 +95,15 @@ func (s *statusTracker) RenderDone() string {
 	}
 
 	var b strings.Builder
-	for _, e := range s.entries {
-		if e.emoji == "" {
-			continue
+	for i, e := range s.entries {
+		if e.emoji != "" {
+			b.WriteString(e.emoji + " " + e.label)
+		} else {
+			b.WriteString("\n<i>" + e.label + "</i>")
 		}
-		b.WriteString(e.emoji + " " + e.label + "\n")
+		if i < len(s.entries)-1 {
+			b.WriteString("\n")
+		}
 	}
 	return b.String()
 }
