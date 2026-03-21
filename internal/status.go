@@ -55,7 +55,6 @@ func (s *statusTracker) AddText(text string) {
 	s.entries = append(s.entries, statusEntry{emoji: "", label: text})
 }
 
-// Render returns the status text while the agent is still running.
 func (s *statusTracker) Render() string {
 	if len(s.entries) == 0 {
 		return ""
@@ -77,8 +76,7 @@ func (s *statusTracker) Render() string {
 	return b.String()
 }
 
-// DropText removes the last text entry (empty emoji) that matches the given text.
-// Used to strip the final response from status before rendering, since it's sent separately.
+// DropText strips the final response from status since it's sent as a separate message.
 func (s *statusTracker) DropText(text string) {
 	for i := len(s.entries) - 1; i >= 0; i-- {
 		if s.entries[i].emoji == "" && s.entries[i].label == text {
@@ -88,7 +86,6 @@ func (s *statusTracker) DropText(text string) {
 	}
 }
 
-// RenderDone returns all entries as completed. Used as a base for final/cancel/error states.
 func (s *statusTracker) RenderDone() string {
 	if len(s.entries) == 0 {
 		return ""

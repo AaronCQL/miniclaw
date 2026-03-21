@@ -68,7 +68,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 
 	args := []string{
 		"--print",
-		"--verbose", // required by Claude CLI when using stream-json with --print
+		"--verbose",
 		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
 	}
@@ -107,7 +107,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 	var resultSessionID string
 
 	scanner := bufio.NewScanner(stdout)
-	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024) // 1MB max line buffer
+	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
