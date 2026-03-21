@@ -247,8 +247,6 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 			// Status only had the final response - edit it to become the result
 			a.bot.EditMessage(input.ChatID, statusMsgID, output.Result)
 			output.Result = ""
-		} else {
-			a.bot.DeleteMessage(input.ChatID, statusMsgID)
 		}
 	}
 
@@ -342,7 +340,7 @@ func (a *App) toggleLogs(chatID, threadID int64) {
 	case StatusText:
 		a.bot.SendMessage(chatID, threadID, "💬 Logs: intermediate text only.")
 	case StatusVerbose:
-		a.bot.SendMessage(chatID, threadID, "🔍 Logs: verbose (intermediate text and tool use).")
+		a.bot.SendMessage(chatID, threadID, "📢 Logs: verbose (intermediate text and tool use).")
 	}
 }
 
