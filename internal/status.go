@@ -83,16 +83,6 @@ func (s *statusTracker) Render() string {
 	return s.renderEntries(true)
 }
 
-// DropText strips the final response from status since it's sent as a separate message.
-func (s *statusTracker) DropText(text string) {
-	for i := len(s.entries) - 1; i >= 0; i-- {
-		if s.entries[i].emoji == "" && s.entries[i].label == text {
-			s.entries = append(s.entries[:i], s.entries[i+1:]...)
-			return
-		}
-	}
-}
-
 func (s *statusTracker) RenderDone() string {
 	return s.renderEntries(false)
 }
