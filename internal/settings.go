@@ -14,7 +14,6 @@ const (
 )
 
 type Settings struct {
-	ShowStatus  *bool  `json:"showStatus,omitempty"`
 	StatusLevel string `json:"statusLevel,omitempty"`
 }
 
@@ -28,22 +27,9 @@ func LoadSettings(dataDir string) Settings {
 		log.Printf("error parsing settings: %v", err)
 		return Settings{StatusLevel: StatusText}
 	}
-
-	// Migrate from older settings formats
-	switch s.StatusLevel {
-	case "":
-		if s.ShowStatus != nil && *s.ShowStatus {
-			s.StatusLevel = StatusVerbose
-		} else if s.ShowStatus != nil {
-			s.StatusLevel = StatusOff
-		} else {
-			s.StatusLevel = StatusText
-		}
-	case "thinking":
+	if s.StatusLevel != StatusOff && s.StatusLevel != StatusText && s.StatusLevel != StatusVerbose {
 		s.StatusLevel = StatusText
 	}
-	s.ShowStatus = nil
-
 	return s
 }
 

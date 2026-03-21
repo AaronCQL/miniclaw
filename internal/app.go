@@ -234,6 +234,11 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 		return
 	}
 
+	// Workaround: Claude CLI's stream-json sets stop_reason=null on all assistant
+	// events, so we can't distinguish intermediate text from the final response
+	// during streaming. We show all text immediately, then retroactively remove
+	// the final response via DropText once the result event arrives.
+	// TODO: simplify if Claude CLI exposes stop_reason on assistant events.
 	if statusMsgID != 0 {
 		tracker.DropText(output.Result)
 		if final := tracker.RenderFinal(); final != "" {
