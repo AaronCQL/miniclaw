@@ -105,7 +105,6 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 
 	var result string
 	var resultSessionID string
-	var pendingText string
 
 	scanner := bufio.NewScanner(stdout)
 	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
@@ -131,16 +130,11 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 		case "assistant":
 			if event.Message != nil && (onToolUse != nil || onText != nil) {
 				for _, block := range event.Message.Content {
-					// Flush buffered text before processing a new event
-					if pendingText != "" && onText != nil {
-						onText(pendingText)
-						pendingText = ""
-					}
 					if block.Type == "tool_use" && block.Name != "" && onToolUse != nil {
 						onToolUse(block.Name, toolLabel(block.Name, block.Input))
 					}
 					if block.Type == "text" && block.Text != "" && onText != nil {
-						pendingText = strings.TrimSpace(block.Text)
+						onText(strings.TrimSpace(block.Text))
 					}
 				}
 			}
