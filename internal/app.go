@@ -104,7 +104,7 @@ func (a *App) runQueuedTask(ctx context.Context, input models.AgentInput) (model
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
-	return a.agentRunner.Run(ctx, input, nil)
+	return a.agentRunner.Run(ctx, input, nil, nil)
 }
 
 // runQueued acquires the per-chat/thread mutex, blocking until any prior agent finishes.
@@ -145,22 +145,7 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 	var debounceTimer *time.Timer
 	var lastStatusText string
 
-	onToolUse := func(toolName, label string) {
-		mu.Lock()
-		defer mu.Unlock()
-
-		first := tracker.Add(toolName, label)
-
-		if first {
-			lastStatusText = tracker.Render()
-			statusMsgID = a.bot.SendStatusMessage(input.ChatID, input.ThreadID, lastStatusText)
-			return
-		}
-
-		if statusMsgID == 0 {
-			return
-		}
-
+	scheduleStatusUpdate := func() {
 		if debounceTimer != nil {
 			debounceTimer.Stop()
 		}
@@ -178,11 +163,44 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 		})
 	}
 
-	var callback func(string, string)
-	if a.showStatus.Load() {
-		callback = onToolUse
+	onToolUse := func(toolName, label string) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		first := tracker.Add(toolName, label)
+
+		if first {
+			lastStatusText = tracker.Render()
+			statusMsgID = a.bot.SendStatusMessage(input.ChatID, input.ThreadID, lastStatusText)
+			return
+		}
+
+		if statusMsgID == 0 {
+			return
+		}
+
+		scheduleStatusUpdate()
 	}
-	output, err := a.agentRunner.Run(ctx, input, callback)
+
+	onText := func(text string) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		if statusMsgID == 0 {
+			return
+		}
+
+		tracker.AddText(text)
+		scheduleStatusUpdate()
+	}
+
+	var toolCallback func(string, string)
+	var textCallback func(string)
+	if a.showStatus.Load() {
+		toolCallback = onToolUse
+		textCallback = onText
+	}
+	output, err := a.agentRunner.Run(ctx, input, toolCallback, textCallback)
 
 	mu.Lock()
 	if debounceTimer != nil {

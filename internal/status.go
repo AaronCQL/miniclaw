@@ -51,6 +51,10 @@ func (s *statusTracker) Add(toolName, label string) bool {
 	return first
 }
 
+func (s *statusTracker) AddText(text string) {
+	s.entries = append(s.entries, statusEntry{emoji: "", label: text})
+}
+
 // Render returns the status text while the agent is still running.
 func (s *statusTracker) Render() string {
 	if len(s.entries) == 0 {
@@ -59,10 +63,14 @@ func (s *statusTracker) Render() string {
 
 	var b strings.Builder
 	for i, e := range s.entries {
-		b.WriteString(e.emoji + " " + e.label)
+		if e.emoji != "" {
+			b.WriteString(e.emoji + " " + e.label)
+		} else {
+			b.WriteString("\n<i>" + e.label + "</i>")
+		}
 		if i < len(s.entries)-1 {
 			b.WriteString("\n")
-		} else {
+		} else if e.emoji != "" {
 			b.WriteString(" 🟡")
 		}
 	}
@@ -77,6 +85,9 @@ func (s *statusTracker) RenderDone() string {
 
 	var b strings.Builder
 	for _, e := range s.entries {
+		if e.emoji == "" {
+			continue
+		}
 		b.WriteString(e.emoji + " " + e.label + "\n")
 	}
 	return b.String()
