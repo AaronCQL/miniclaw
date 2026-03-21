@@ -1,6 +1,10 @@
 package internal
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
 func TestStatusTracker_Empty(t *testing.T) {
 	s := newStatusTracker()
@@ -127,5 +131,126 @@ func TestStatusTracker_RenderFinal(t *testing.T) {
 	want := "📄 <code>main.go</code>\n⚡ <code>go test</code>"
 	if got := s.RenderFinal(); got != want {
 		t.Errorf("RenderFinal() =\n%q\nwant:\n%q", got, want)
+	}
+}
+
+func TestStatusTracker_AddText(t *testing.T) {
+	s := newStatusTracker()
+	s.AddText("Let me check that")
+
+	// Spinner only shows on tool entries, not text
+	want := "<i>Let me check that</i>"
+	if got := s.Render(); got != want {
+		t.Errorf("Render() = %q, want %q", got, want)
+	}
+}
+
+func TestStatusTracker_TextColonRenderedAsPeriod(t *testing.T) {
+	s := newStatusTracker()
+	s.AddText("Let me check:")
+
+	want := "<i>Let me check.</i>"
+	if got := s.Render(); got != want {
+		t.Errorf("Render() = %q, want %q", got, want)
+	}
+}
+
+func TestStatusTracker_TextAfterTool(t *testing.T) {
+	s := newStatusTracker()
+	s.Add("Read", "<code>app.go</code>")
+	s.AddText("I see the issue")
+
+	want := "📄 <code>app.go</code>\n\n<i>I see the issue</i>"
+	if got := s.Render(); got != want {
+		t.Errorf("Render() = %q, want %q", got, want)
+	}
+}
+
+func TestStatusTracker_ToolAfterText(t *testing.T) {
+	s := newStatusTracker()
+	s.AddText("Let me check")
+	s.Add("Read", "<code>app.go</code>")
+
+	want := "<i>Let me check</i>\n📄 <code>app.go</code> 🟡"
+	if got := s.Render(); got != want {
+		t.Errorf("Render() = %q, want %q", got, want)
+	}
+}
+
+func TestStatusTracker_MultipleTexts(t *testing.T) {
+	s := newStatusTracker()
+	s.AddText("First thought")
+	s.AddText("Second thought")
+
+	want := "<i>First thought</i>\n\n<i>Second thought</i>"
+	if got := s.Render(); got != want {
+		t.Errorf("Render() = %q, want %q", got, want)
+	}
+}
+
+func TestStatusTracker_DropText(t *testing.T) {
+	s := newStatusTracker()
+	s.Add("Read", "<code>app.go</code>")
+	s.AddText("This is the result")
+
+	s.DropText("This is the result")
+
+	want := "📄 <code>app.go</code>"
+	if got := s.RenderFinal(); got != want {
+		t.Errorf("RenderFinal() = %q, want %q", got, want)
+	}
+}
+
+func TestStatusTracker_DropText_TrimSpace(t *testing.T) {
+	s := newStatusTracker()
+	s.AddText("result text")
+
+	s.DropText("  result text\n")
+
+	if got := s.RenderFinal(); got != "" {
+		t.Errorf("RenderFinal() after DropText = %q, want empty", got)
+	}
+}
+
+func TestStatusTracker_DropText_NoMatch(t *testing.T) {
+	s := newStatusTracker()
+	s.Add("Read", "<code>app.go</code>")
+	s.AddText("intermediate text")
+
+	s.DropText("different text")
+
+	want := "📄 <code>app.go</code>\n\n<i>intermediate text</i>"
+	if got := s.RenderFinal(); got != want {
+		t.Errorf("RenderFinal() = %q, want %q", got, want)
+	}
+}
+
+func TestStatusTracker_Truncation(t *testing.T) {
+	s := newStatusTracker()
+	// Each entry is unique (different index) to avoid dedup, ~70 chars each
+	for i := 0; i < 200; i++ {
+		s.Add("Bash", fmt.Sprintf("<code>command-%03d-with-a-long-argument-to-fill-space</code>", i))
+	}
+
+	got := s.Render()
+	if len(got) > maxStatusLen+100 {
+		t.Errorf("Render() len = %d, should be near or under %d", len(got), maxStatusLen)
+	}
+	if !strings.Contains(got, "... ") {
+		t.Error("truncated render should contain '... ' prefix")
+	}
+	if !strings.Contains(got, "earlier entries") {
+		t.Error("truncated render should mention 'earlier entries'")
+	}
+}
+
+func TestStatusTracker_NoTruncationWhenShort(t *testing.T) {
+	s := newStatusTracker()
+	s.Add("Read", "<code>app.go</code>")
+	s.Add("Bash", "<code>go test</code>")
+
+	got := s.Render()
+	if strings.Contains(got, "...") {
+		t.Error("short render should not be truncated")
 	}
 }
