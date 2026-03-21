@@ -196,7 +196,7 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 	var toolCallback func(string, string)
 	var textCallback func(string)
 	switch a.statusLevel.Load().(string) {
-	case StatusThinking:
+	case StatusText:
 		textCallback = onText
 	case StatusVerbose:
 		toolCallback = onToolUse
@@ -319,8 +319,8 @@ func (a *App) toggleLogs(chatID, threadID int64) {
 	var next string
 	switch a.statusLevel.Load().(string) {
 	case StatusOff:
-		next = StatusThinking
-	case StatusThinking:
+		next = StatusText
+	case StatusText:
 		next = StatusVerbose
 	default:
 		next = StatusOff
@@ -334,10 +334,10 @@ func (a *App) toggleLogs(chatID, threadID int64) {
 	switch next {
 	case StatusOff:
 		a.bot.SendMessage(chatID, threadID, "🔕 Logs: off.")
-	case StatusThinking:
-		a.bot.SendMessage(chatID, threadID, "💭 Logs: thinking only.")
+	case StatusText:
+		a.bot.SendMessage(chatID, threadID, "💬 Logs: intermediate text only.")
 	case StatusVerbose:
-		a.bot.SendMessage(chatID, threadID, "🔍 Logs: verbose (thinking and actions).")
+		a.bot.SendMessage(chatID, threadID, "🔍 Logs: verbose (intermediate text and tool use).")
 	}
 }
 

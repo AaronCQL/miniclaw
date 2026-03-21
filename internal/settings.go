@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	StatusOff      = "off"
-	StatusThinking = "thinking"
-	StatusVerbose  = "verbose"
+	StatusOff     = "off"
+	StatusText    = "text"
+	StatusVerbose = "verbose"
 )
 
 type Settings struct {
@@ -21,23 +21,26 @@ type Settings struct {
 func LoadSettings(dataDir string) Settings {
 	data, err := os.ReadFile(filepath.Join(dataDir, "settings.json"))
 	if err != nil {
-		return Settings{StatusLevel: StatusThinking}
+		return Settings{StatusLevel: StatusText}
 	}
 	var s Settings
 	if err := json.Unmarshal(data, &s); err != nil {
 		log.Printf("error parsing settings: %v", err)
-		return Settings{StatusLevel: StatusThinking}
+		return Settings{StatusLevel: StatusText}
 	}
 
-	// Migrate from bool ShowStatus to three-tier StatusLevel
-	if s.StatusLevel == "" {
+	// Migrate from older settings formats
+	switch s.StatusLevel {
+	case "":
 		if s.ShowStatus != nil && *s.ShowStatus {
 			s.StatusLevel = StatusVerbose
 		} else if s.ShowStatus != nil {
 			s.StatusLevel = StatusOff
 		} else {
-			s.StatusLevel = StatusThinking
+			s.StatusLevel = StatusText
 		}
+	case "thinking":
+		s.StatusLevel = StatusText
 	}
 	s.ShowStatus = nil
 
