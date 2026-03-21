@@ -68,7 +68,11 @@ func (s *statusTracker) renderEntries(showSpinner bool) string {
 			if i > 0 {
 				b.WriteString("\n")
 			}
-			b.WriteString("<i>" + e.label + "</i>")
+			label := e.label
+			if strings.HasSuffix(label, ":") {
+				label = label[:len(label)-1] + "."
+			}
+			b.WriteString("<i>" + label + "</i>")
 		}
 		if i < len(s.entries)-1 {
 			b.WriteString("\n")
@@ -85,6 +89,7 @@ func (s *statusTracker) Render() string {
 
 // DropText strips the final response from status since it's sent as a separate message.
 func (s *statusTracker) DropText(text string) {
+	text = strings.TrimSpace(text)
 	for i := len(s.entries) - 1; i >= 0; i-- {
 		if s.entries[i].emoji == "" && s.entries[i].label == text {
 			s.entries = append(s.entries[:i], s.entries[i+1:]...)

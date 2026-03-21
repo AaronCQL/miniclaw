@@ -176,7 +176,7 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 		if debounceTimer != nil {
 			debounceTimer.Stop()
 		}
-		debounceTimer = time.AfterFunc(500*time.Millisecond, flushStatus)
+		debounceTimer = time.AfterFunc(1*time.Second, flushStatus)
 	}
 
 	onToolUse := func(toolName, label string) {
@@ -238,6 +238,10 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 		tracker.DropText(output.Result)
 		if final := tracker.RenderFinal(); final != "" {
 			a.bot.EditMessage(input.ChatID, statusMsgID, final)
+		} else if output.Result != "" {
+			// Status only had the final response - edit it to become the result
+			a.bot.EditMessage(input.ChatID, statusMsgID, output.Result)
+			output.Result = ""
 		} else {
 			a.bot.DeleteMessage(input.ChatID, statusMsgID)
 		}
