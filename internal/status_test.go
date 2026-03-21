@@ -113,7 +113,7 @@ func TestStatusTracker_RenderDone(t *testing.T) {
 	s.Add("Read", "<code>main.go</code>")
 	s.Add("Bash", "<code>go test</code>")
 
-	want := "📄 <code>main.go</code>\n⚡ <code>go test</code>\n"
+	want := "📄 <code>main.go</code>\n⚡ <code>go test</code>"
 	if got := s.RenderDone(); got != want {
 		t.Errorf("RenderDone() =\n%q\nwant:\n%q", got, want)
 	}
