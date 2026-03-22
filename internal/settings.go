@@ -7,19 +7,28 @@ import (
 	"path/filepath"
 )
 
+const (
+	StatusOff     = "off"
+	StatusText    = "text"
+	StatusVerbose = "verbose"
+)
+
 type Settings struct {
-	ShowStatus bool `json:"showStatus"`
+	StatusLevel string `json:"statusLevel,omitempty"`
 }
 
 func LoadSettings(dataDir string) Settings {
 	data, err := os.ReadFile(filepath.Join(dataDir, "settings.json"))
 	if err != nil {
-		return Settings{}
+		return Settings{StatusLevel: StatusText}
 	}
 	var s Settings
 	if err := json.Unmarshal(data, &s); err != nil {
 		log.Printf("error parsing settings: %v", err)
-		return Settings{}
+		return Settings{StatusLevel: StatusText}
+	}
+	if s.StatusLevel != StatusOff && s.StatusLevel != StatusText && s.StatusLevel != StatusVerbose {
+		s.StatusLevel = StatusText
 	}
 	return s
 }

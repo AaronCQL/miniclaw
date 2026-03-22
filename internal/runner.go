@@ -58,11 +58,12 @@ func (m *streamMessage) UnmarshalJSON(data []byte) error {
 
 type streamContent struct {
 	Type  string         `json:"type"`
+	Text  string         `json:"text"`
 	Name  string         `json:"name"`
 	Input map[string]any `json:"input"`
 }
 
-func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUse func(toolName, label string)) (models.AgentOutput, error) {
+func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUse func(toolName, label string), onText func(text string)) (models.AgentOutput, error) {
 	prompt := r.buildPrompt(input)
 
 	args := []string{
@@ -106,7 +107,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 	var resultSessionID string
 
 	scanner := bufio.NewScanner(stdout)
-	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024) // 1MB max line buffer
+	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
@@ -127,10 +128,13 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 			}
 
 		case "assistant":
-			if onToolUse != nil && event.Message != nil {
+			if event.Message != nil && (onToolUse != nil || onText != nil) {
 				for _, block := range event.Message.Content {
-					if block.Type == "tool_use" && block.Name != "" {
+					if block.Type == "tool_use" && block.Name != "" && onToolUse != nil {
 						onToolUse(block.Name, toolLabel(block.Name, block.Input))
+					}
+					if block.Type == "text" && block.Text != "" && onText != nil {
+						onText(strings.TrimSpace(block.Text))
 					}
 				}
 			}

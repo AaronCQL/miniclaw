@@ -30,7 +30,7 @@ type App struct {
 	agentRunner *AgentRunner
 	scheduler   *Scheduler
 	chats       sync.Map // map[int64]*chatState
-	showStatus  atomic.Bool
+	statusLevel atomic.Value
 }
 
 func NewApp(cfg Config) *App {
@@ -40,7 +40,7 @@ func NewApp(cfg Config) *App {
 	a.agentRunner = NewAgentRunner(cfg, sessions)
 
 	settings := LoadSettings(cfg.DataDir)
-	a.showStatus.Store(settings.ShowStatus)
+	a.statusLevel.Store(settings.StatusLevel)
 
 	bot, err := NewTelegramBot(cfg.TelegramToken, filepath.Join(cfg.WorkspaceDir, "files"), a.onMessage)
 	if err != nil {
@@ -104,7 +104,7 @@ func (a *App) runQueuedTask(ctx context.Context, input models.AgentInput) (model
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
-	return a.agentRunner.Run(ctx, input, nil)
+	return a.agentRunner.Run(ctx, input, nil, nil)
 }
 
 // runQueued acquires the per-chat/thread mutex, blocking until any prior agent finishes.
@@ -140,51 +140,72 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 	tracker := newStatusTracker()
 	var statusMsgID int64
 
-	// Debounce timer to avoid rapid edits hitting Telegram rate limits
 	var mu sync.Mutex
 	var debounceTimer *time.Timer
 	var lastStatusText string
+	var done bool
+
+	flushStatus := func() {
+		mu.Lock()
+		if done {
+			mu.Unlock()
+			return
+		}
+		text := tracker.Render()
+		changed := text != lastStatusText
+		if changed {
+			lastStatusText = text
+		}
+		msgID := statusMsgID
+		mu.Unlock()
+		if !changed {
+			return
+		}
+		if msgID != 0 {
+			a.bot.EditMessage(input.ChatID, msgID, text)
+		} else {
+			mu.Lock()
+			if statusMsgID == 0 {
+				statusMsgID = a.bot.SendStatusMessage(input.ChatID, input.ThreadID, text)
+			}
+			mu.Unlock()
+		}
+	}
+
+	scheduleStatusUpdate := func() {
+		if debounceTimer != nil {
+			debounceTimer.Stop()
+		}
+		debounceTimer = time.AfterFunc(1*time.Second, flushStatus)
+	}
 
 	onToolUse := func(toolName, label string) {
 		mu.Lock()
 		defer mu.Unlock()
-
-		first := tracker.Add(toolName, label)
-
-		if first {
-			lastStatusText = tracker.Render()
-			statusMsgID = a.bot.SendStatusMessage(input.ChatID, input.ThreadID, lastStatusText)
-			return
-		}
-
-		if statusMsgID == 0 {
-			return
-		}
-
-		if debounceTimer != nil {
-			debounceTimer.Stop()
-		}
-		debounceTimer = time.AfterFunc(1*time.Second, func() {
-			mu.Lock()
-			text := tracker.Render()
-			changed := text != lastStatusText
-			if changed {
-				lastStatusText = text
-			}
-			mu.Unlock()
-			if changed {
-				a.bot.EditMessage(input.ChatID, statusMsgID, text)
-			}
-		})
+		tracker.Add(toolName, label)
+		scheduleStatusUpdate()
 	}
 
-	var callback func(string, string)
-	if a.showStatus.Load() {
-		callback = onToolUse
+	onText := func(text string) {
+		mu.Lock()
+		defer mu.Unlock()
+		tracker.AddText(text)
+		scheduleStatusUpdate()
 	}
-	output, err := a.agentRunner.Run(ctx, input, callback)
+
+	var toolCallback func(string, string)
+	var textCallback func(string)
+	switch a.statusLevel.Load().(string) {
+	case StatusText:
+		textCallback = onText
+	case StatusVerbose:
+		toolCallback = onToolUse
+		textCallback = onText
+	}
+	output, err := a.agentRunner.Run(ctx, input, toolCallback, textCallback)
 
 	mu.Lock()
+	done = true
 	if debounceTimer != nil {
 		debounceTimer.Stop()
 	}
@@ -213,8 +234,20 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 		return
 	}
 
+	// Workaround: Claude CLI's stream-json sets stop_reason=null on all assistant
+	// events, so we can't distinguish intermediate text from the final response
+	// during streaming. We show all text immediately, then retroactively remove
+	// the final response via DropText once the result event arrives.
+	// TODO: simplify if Claude CLI exposes stop_reason on assistant events.
 	if statusMsgID != 0 {
-		a.bot.EditMessage(input.ChatID, statusMsgID, tracker.RenderFinal())
+		tracker.DropText(output.Result)
+		if final := tracker.RenderFinal(); final != "" {
+			a.bot.EditMessage(input.ChatID, statusMsgID, final)
+		} else if output.Result != "" {
+			// Status only had the final response - edit it to become the result
+			a.bot.EditMessage(input.ChatID, statusMsgID, output.Result)
+			output.Result = ""
+		}
 	}
 
 	if output.Result != "" {
@@ -285,15 +318,29 @@ func (a *App) toggleLogs(chatID, threadID int64) {
 	if !a.isAllowed(chatID) {
 		return
 	}
-	enabled := !a.showStatus.Load()
-	a.showStatus.Store(enabled)
+
+	var next string
+	switch a.statusLevel.Load().(string) {
+	case StatusOff:
+		next = StatusText
+	case StatusText:
+		next = StatusVerbose
+	default:
+		next = StatusOff
+	}
+
+	a.statusLevel.Store(next)
 	s := LoadSettings(a.config.DataDir)
-	s.ShowStatus = enabled
+	s.StatusLevel = next
 	SaveSettings(a.config.DataDir, s)
-	if enabled {
-		a.bot.SendMessage(chatID, threadID, "✅ Status updates enabled.")
-	} else {
-		a.bot.SendMessage(chatID, threadID, "🔕 Status updates disabled.")
+
+	switch next {
+	case StatusOff:
+		a.bot.SendMessage(chatID, threadID, "🔕 Logs: off.")
+	case StatusText:
+		a.bot.SendMessage(chatID, threadID, "💬 Logs: intermediate text only.")
+	case StatusVerbose:
+		a.bot.SendMessage(chatID, threadID, "📢 Logs: verbose (intermediate text and tool use).")
 	}
 }
 
