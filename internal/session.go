@@ -103,6 +103,21 @@ func (s *SessionStore) GetUsage(chatID, threadID int64) SessionData {
 	return sessions[sessionKey(chatID, threadID)]
 }
 
+func (s *SessionStore) Clear(chatID, threadID int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	sessions := s.load()
+	key := sessionKey(chatID, threadID)
+	entry := sessions[key]
+	entry.SessionID = ""
+	entry.ContextTokens = 0
+	entry.ContextWindow = 0
+	entry.LastCostUSD = 0
+	sessions[key] = entry
+	s.save(sessions)
+}
+
 func (s *SessionStore) TotalCost() float64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()

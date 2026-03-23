@@ -166,6 +166,37 @@ func TestSessionStore_TotalCost(t *testing.T) {
 	}
 }
 
+func TestSessionStore_Clear(t *testing.T) {
+	s := newTestSessionStore(t)
+
+	s.SetIfAbsent(100, 200, "sess-1")
+	s.UpdateUsage(100, 200, map[string]models.ModelUsage{
+		"opus": {InputTokens: 50000, CostUSD: 1.50, ContextWindow: 1000000},
+	}, false)
+
+	s.Clear(100, 200)
+
+	got := s.GetUsage(100, 200)
+	if got.SessionID != "" {
+		t.Errorf("SessionID = %q, want empty after clear", got.SessionID)
+	}
+	if got.ContextTokens != 0 || got.ContextWindow != 0 {
+		t.Errorf("Context = %d/%d, want 0/0 after clear", got.ContextTokens, got.ContextWindow)
+	}
+	if got.LastCostUSD != 0 {
+		t.Errorf("LastCostUSD = %f, want 0 after clear", got.LastCostUSD)
+	}
+	if got.CostUSD != 1.50 {
+		t.Errorf("CostUSD = %f, want 1.50 (should be preserved)", got.CostUSD)
+	}
+
+	// Next SetIfAbsent should work since SessionID was cleared
+	s.SetIfAbsent(100, 200, "sess-2")
+	if got := s.Get(100, 200); got != "sess-2" {
+		t.Errorf("Get after clear = %q, want %q", got, "sess-2")
+	}
+}
+
 func TestSessionStore_BackwardCompat(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "sessions.json")

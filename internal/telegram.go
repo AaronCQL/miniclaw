@@ -28,6 +28,7 @@ type TelegramBot struct {
 	onRestart func(chatID, threadID int64)
 	onLogs    func(chatID, threadID int64)
 	onUsage   func(chatID, threadID int64)
+	onClear   func(chatID, threadID int64)
 }
 
 func NewTelegramBot(token string, fileDir string, onMessage func(msg models.Message)) (*TelegramBot, error) {
@@ -54,6 +55,7 @@ func NewTelegramBot(token string, fileDir string, onMessage func(msg models.Mess
 	dispatcher.AddHandler(handlers.NewCommand("restart", tb.handleRestart))
 	dispatcher.AddHandler(handlers.NewCommand("logs", tb.handleLogs))
 	dispatcher.AddHandler(handlers.NewCommand("usage", tb.handleUsage))
+	dispatcher.AddHandler(handlers.NewCommand("clear", tb.handleClear))
 
 	dispatcher.AddHandler(handlers.NewMessage(nil, tb.handleMessage))
 
@@ -116,6 +118,14 @@ func (tb *TelegramBot) handleUsage(_ *gotgbot.Bot, ctx *ext.Context) error {
 	log.Printf("[recv] chat=%d thread=%d command=/usage", ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId)
 	if tb.onUsage != nil {
 		tb.onUsage(ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId)
+	}
+	return nil
+}
+
+func (tb *TelegramBot) handleClear(_ *gotgbot.Bot, ctx *ext.Context) error {
+	log.Printf("[recv] chat=%d thread=%d command=/clear", ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId)
+	if tb.onClear != nil {
+		tb.onClear(ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId)
 	}
 	return nil
 }

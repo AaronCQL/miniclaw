@@ -53,6 +53,7 @@ func NewApp(cfg Config) *App {
 	a.bot.onRestart = a.restartAgent
 	a.bot.onLogs = a.toggleLogs
 	a.bot.onUsage = a.showUsage
+	a.bot.onClear = a.clearSession
 
 	a.scheduler = NewScheduler(cfg, a.runQueuedTask, a.sendAgentOutput)
 
@@ -354,6 +355,14 @@ func (a *App) toggleLogs(chatID, threadID int64) {
 	}
 }
 
+func (a *App) clearSession(chatID, threadID int64) {
+	if !a.isAllowed(chatID) {
+		return
+	}
+	a.sessions.Clear(chatID, threadID)
+	a.bot.SendMessage(chatID, threadID, "Context cleared. Next message will start a fresh session.")
+}
+
 func (a *App) showUsage(chatID, threadID int64) {
 	if !a.isAllowed(chatID) {
 		return
@@ -375,16 +384,16 @@ func (a *App) showUsage(chatID, threadID int64) {
 		return
 	}
 
-	var pct float64
+	contextLine := "Context: <b>no data yet</b>"
 	if usage.ContextWindow > 0 {
-		pct = float64(usage.ContextTokens) / float64(usage.ContextWindow) * 100
+		pct := float64(usage.ContextTokens) / float64(usage.ContextWindow) * 100
+		contextLine = fmt.Sprintf("Context: <b>%s / %s</b> (%.2f%%)",
+			formatTokens(usage.ContextTokens), formatTokens(usage.ContextWindow), pct)
 	}
 
 	text := fmt.Sprintf(
-		"💸 <b>Usage</b>\n\nContext: <b>%s / %s</b> (%.2f%%)\n%s\n%s",
-		formatTokens(usage.ContextTokens),
-		formatTokens(usage.ContextWindow),
-		pct,
+		"💸 <b>Usage</b>\n\n%s\n%s\n%s",
+		contextLine,
 		formatCostLine("Thread Cost", usage.CostUSD, usage.LastCostUSD),
 		formatCostLine("Total Cost", totalCost, 0),
 	)
