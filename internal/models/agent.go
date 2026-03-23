@@ -13,7 +13,18 @@ type AgentInput struct {
 }
 
 type AgentOutput struct {
-	Result string
-	Status string // "success" or "error"
-	Error  string
+	Result     string
+	Status     string // "success" or "error"
+	Error      string
+	ModelUsage map[string]ModelUsage
+}
+
+// ModelUsage holds token counts and cost for a single model from one CLI invocation.
+type ModelUsage struct {
+	InputTokens              int     `json:"inputTokens"`
+	OutputTokens             int     `json:"outputTokens"`
+	CacheReadInputTokens     int     `json:"cacheReadInputTokens"`
+	CacheCreationInputTokens int     `json:"cacheCreationInputTokens"`
+	CostUSD                  float64 `json:"costUSD"`
+	ContextWindow            int     `json:"contextWindow"`
 }

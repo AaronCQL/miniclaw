@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"path/filepath"
 	"sync"
@@ -28,6 +29,7 @@ type App struct {
 	config      Config
 	bot         *TelegramBot
 	agentRunner *AgentRunner
+	sessions    *SessionStore
 	scheduler   *Scheduler
 	chats       sync.Map // map[int64]*chatState
 	statusLevel atomic.Value
@@ -36,8 +38,8 @@ type App struct {
 func NewApp(cfg Config) *App {
 	a := &App{config: cfg}
 
-	sessions := NewSessionStore(cfg.DataDir + "/sessions.json")
-	a.agentRunner = NewAgentRunner(cfg, sessions)
+	a.sessions = NewSessionStore(cfg.DataDir + "/sessions.json")
+	a.agentRunner = NewAgentRunner(cfg, a.sessions)
 
 	settings := LoadSettings(cfg.DataDir)
 	a.statusLevel.Store(settings.StatusLevel)
@@ -50,6 +52,7 @@ func NewApp(cfg Config) *App {
 	a.bot.onCancel = a.cancelAgent
 	a.bot.onRestart = a.restartAgent
 	a.bot.onLogs = a.toggleLogs
+	a.bot.onUsage = a.showUsage
 
 	a.scheduler = NewScheduler(cfg, a.runQueuedTask, a.sendAgentOutput)
 
@@ -104,7 +107,11 @@ func (a *App) runQueuedTask(ctx context.Context, input models.AgentInput) (model
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
-	return a.agentRunner.Run(ctx, input, nil, nil)
+	output, err := a.agentRunner.Run(ctx, input, nil, nil)
+	if err == nil && output.ModelUsage != nil {
+		a.sessions.UpdateUsage(input.ChatID, input.ThreadID, output.ModelUsage, input.IsolatedSession)
+	}
+	return output, err
 }
 
 // runQueued acquires the per-chat/thread mutex, blocking until any prior agent finishes.
@@ -203,6 +210,9 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 		textCallback = onText
 	}
 	output, err := a.agentRunner.Run(ctx, input, toolCallback, textCallback)
+	if output.ModelUsage != nil {
+		a.sessions.UpdateUsage(input.ChatID, input.ThreadID, output.ModelUsage, false)
+	}
 
 	mu.Lock()
 	done = true
@@ -342,6 +352,62 @@ func (a *App) toggleLogs(chatID, threadID int64) {
 	case StatusVerbose:
 		a.bot.SendMessage(chatID, threadID, "📢 Logs: verbose (intermediate text and tool use).")
 	}
+}
+
+func (a *App) showUsage(chatID, threadID int64) {
+	if !a.isAllowed(chatID) {
+		return
+	}
+
+	totalCost := a.sessions.TotalCost()
+
+	if threadID == 0 {
+		usage := a.sessions.GetUsage(chatID, 0)
+		text := fmt.Sprintf("💸 <b>Usage</b>\n\n%s", formatCostLine("Total Cost", totalCost, usage.LastCostUSD))
+		a.bot.SendMessage(chatID, threadID, text)
+		return
+	}
+
+	usage := a.sessions.GetUsage(chatID, threadID)
+	if usage.ContextWindow == 0 && usage.CostUSD == 0 {
+		text := fmt.Sprintf("💸 <b>Usage</b>\n\n%s", formatCostLine("Total Cost", totalCost, 0))
+		a.bot.SendMessage(chatID, threadID, text)
+		return
+	}
+
+	var pct float64
+	if usage.ContextWindow > 0 {
+		pct = float64(usage.ContextTokens) / float64(usage.ContextWindow) * 100
+	}
+
+	text := fmt.Sprintf(
+		"💸 <b>Usage</b>\n\nContext: <b>%s / %s</b> (%.2f%%)\n%s\n%s",
+		formatTokens(usage.ContextTokens),
+		formatTokens(usage.ContextWindow),
+		pct,
+		formatCostLine("Thread Cost", usage.CostUSD, usage.LastCostUSD),
+		formatCostLine("Total Cost", totalCost, 0),
+	)
+
+	a.bot.SendMessage(chatID, threadID, text)
+}
+
+func formatCostLine(label string, cost, lastCost float64) string {
+	line := fmt.Sprintf("%s: <b>$%.4f</b>", label, cost)
+	if lastCost > 0 {
+		line += fmt.Sprintf(" (+$%.4f)", lastCost)
+	}
+	return line
+}
+
+func formatTokens(n int) string {
+	if n >= 1_000_000 {
+		return fmt.Sprintf("%.1fM", float64(n)/1_000_000)
+	}
+	if n >= 1_000 {
+		return fmt.Sprintf("%.1fK", float64(n)/1_000)
+	}
+	return fmt.Sprintf("%d", n)
 }
 
 func (a *App) isAllowed(chatID int64) bool {

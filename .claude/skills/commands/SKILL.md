@@ -28,6 +28,7 @@ Combine the discovered skills with these hardcoded commands that don't have SKIL
 - `compact`: "Compact conversation context to free up space"
 - `logs`: "Cycle status updates: off, text only, verbose"
 - `simplify`: "Review changed code for reuse, quality, and efficiency"
+- `usage`: "Show context window usage and cumulative cost"
 
 Telegram command descriptions have a 256-character limit. Truncate any descriptions that exceed this.
 

@@ -92,6 +92,7 @@ Skills are slash commands the agent follows as expert instructions:
 | `/restart` | Rebuild miniclaw and restart the background service | On demand |
 | `/review` | Review git diff, suggest commits | On demand |
 | `/logs` | Cycle status updates: off, text only, verbose | On demand |
+| `/usage` | Show context window usage and cumulative cost | On demand |
 | `/transcribe` | Transcribe voice messages via Groq Whisper | Auto (on voice message) |
 
 ### AI-Managed Tasks

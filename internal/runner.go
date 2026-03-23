@@ -30,11 +30,12 @@ func NewAgentRunner(cfg Config, sessions *SessionStore) *AgentRunner {
 }
 
 type streamEvent struct {
-	Type      string         `json:"type"`
-	Subtype   string         `json:"subtype"`
-	SessionID string         `json:"session_id"`
-	Result    string         `json:"result"`
-	Message   *streamMessage `json:"message"`
+	Type       string                       `json:"type"`
+	Subtype    string                       `json:"subtype"`
+	SessionID  string                       `json:"session_id"`
+	Result     string                       `json:"result"`
+	Message    *streamMessage               `json:"message"`
+	ModelUsage map[string]models.ModelUsage `json:"modelUsage"`
 }
 
 type streamMessage struct {
@@ -105,6 +106,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 
 	var result string
 	var resultSessionID string
+	var resultModelUsage map[string]models.ModelUsage
 
 	scanner := bufio.NewScanner(stdout)
 	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
@@ -146,6 +148,9 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 			if event.SessionID != "" {
 				resultSessionID = event.SessionID
 			}
+			if event.ModelUsage != nil {
+				resultModelUsage = event.ModelUsage
+			}
 		}
 	}
 
@@ -160,8 +165,9 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 
 	log.Printf("[agent] chat=%d thread=%d completed session=%s result_len=%d", input.ChatID, input.ThreadID, resultSessionID, len(result))
 	return models.AgentOutput{
-		Result: result,
-		Status: "success",
+		Result:     result,
+		Status:     "success",
+		ModelUsage: resultModelUsage,
 	}, nil
 }
 
