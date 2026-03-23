@@ -20,6 +20,12 @@ import (
 
 const maxMessageLength = 4096
 
+const (
+	callbackClearYes = "clear_yes"
+	callbackClearNo  = "clear_no"
+	clearPromptText  = "⚠️ Are you sure you want to clear all context for this thread?"
+)
+
 type TelegramBot struct {
 	bot       *gotgbot.Bot
 	updater   *ext.Updater
@@ -57,8 +63,8 @@ func NewTelegramBot(token string, fileDir string, onMessage func(msg models.Mess
 	dispatcher.AddHandler(handlers.NewCommand("logs", tb.handleLogs))
 	dispatcher.AddHandler(handlers.NewCommand("usage", tb.handleUsage))
 	dispatcher.AddHandler(handlers.NewCommand("clear", tb.handleClear))
-	dispatcher.AddHandler(handlers.NewCallback(callbackquery.Equal("clear_yes"), tb.handleClearConfirm))
-	dispatcher.AddHandler(handlers.NewCallback(callbackquery.Equal("clear_no"), tb.handleClearCancel))
+	dispatcher.AddHandler(handlers.NewCallback(callbackquery.Equal(callbackClearYes), tb.handleClearConfirm))
+	dispatcher.AddHandler(handlers.NewCallback(callbackquery.Equal(callbackClearNo), tb.handleClearCancel))
 
 	dispatcher.AddHandler(handlers.NewMessage(nil, tb.handleMessage))
 
@@ -133,50 +139,51 @@ func (tb *TelegramBot) handleClear(b *gotgbot.Bot, ctx *ext.Context) error {
 	opts := &gotgbot.SendMessageOpts{
 		ReplyMarkup: &gotgbot.InlineKeyboardMarkup{
 			InlineKeyboard: [][]gotgbot.InlineKeyboardButton{{
-				{Text: "🚫 Cancel", CallbackData: "clear_no"},
-				{Text: "👍 Yes", CallbackData: "clear_yes"},
+				{Text: "🚫 Cancel", CallbackData: callbackClearNo},
+				{Text: "👍 Yes", CallbackData: callbackClearYes},
 			}},
 		},
 	}
 	if threadID > 0 {
 		opts.MessageThreadId = threadID
 	}
-	_, err := b.SendMessage(chatID, "⚠️ Are you sure you want to clear all context for this thread?", opts)
+	_, err := b.SendMessage(chatID, clearPromptText, opts)
 	return err
 }
 
 func (tb *TelegramBot) handleClearConfirm(b *gotgbot.Bot, ctx *ext.Context) error {
-	chatID := ctx.EffectiveChat.Id
-	threadID := ctx.EffectiveMessage.MessageThreadId
-	log.Printf("[recv] chat=%d thread=%d callback=clear_yes", chatID, threadID)
+	log.Printf("[recv] chat=%d thread=%d callback=%s", ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId, callbackClearYes)
+
+	tb.answerCallback(b, ctx, "<i>Context cleared. Next message will start a fresh session.</i>")
 
 	if tb.onClear != nil {
-		tb.onClear(chatID, threadID)
+		tb.onClear(ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId)
 	}
-
-	ctx.CallbackQuery.Answer(b, nil)
-	b.EditMessageText("<s>⚠️ Are you sure you want to clear all context for this thread?</s>\n\n<i>Context cleared. Next message will start a fresh session.</i>", &gotgbot.EditMessageTextOpts{
-		ChatId:      chatID,
-		MessageId:   ctx.EffectiveMessage.MessageId,
-		ParseMode:   "HTML",
-		ReplyMarkup: gotgbot.InlineKeyboardMarkup{},
-	})
 	return nil
 }
 
 func (tb *TelegramBot) handleClearCancel(b *gotgbot.Bot, ctx *ext.Context) error {
-	chatID := ctx.EffectiveChat.Id
-	threadID := ctx.EffectiveMessage.MessageThreadId
-	log.Printf("[recv] chat=%d thread=%d callback=clear_no", chatID, threadID)
+	log.Printf("[recv] chat=%d thread=%d callback=%s", ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId, callbackClearNo)
 
-	ctx.CallbackQuery.Answer(b, nil)
-	b.EditMessageText("<s>⚠️ Are you sure you want to clear all context for this thread?</s>\n\n<i>Cancelled.</i>", &gotgbot.EditMessageTextOpts{
-		ChatId:      chatID,
+	tb.answerCallback(b, ctx, "<i>Cancelled.</i>")
+	return nil
+}
+
+// answerCallback answers a callback query and edits the original message
+// with a strikethrough prompt followed by the result text.
+func (tb *TelegramBot) answerCallback(b *gotgbot.Bot, ctx *ext.Context, resultText string) {
+	if _, err := ctx.CallbackQuery.Answer(b, nil); err != nil {
+		log.Printf("[send] chat=%d failed to answer callback: %v", ctx.EffectiveChat.Id, err)
+	}
+	text := fmt.Sprintf("<s>%s</s>\n\n%s", clearPromptText, resultText)
+	if _, _, err := b.EditMessageText(text, &gotgbot.EditMessageTextOpts{
+		ChatId:      ctx.EffectiveChat.Id,
 		MessageId:   ctx.EffectiveMessage.MessageId,
 		ParseMode:   "HTML",
 		ReplyMarkup: gotgbot.InlineKeyboardMarkup{},
-	})
-	return nil
+	}); err != nil {
+		log.Printf("[send] chat=%d msg=%d failed to edit callback message: %v", ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageId, err)
+	}
 }
 
 func (tb *TelegramBot) handleMessage(_ *gotgbot.Bot, ctx *ext.Context) error {

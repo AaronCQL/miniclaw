@@ -109,12 +109,11 @@ func (s *SessionStore) Clear(chatID, threadID int64) {
 
 	sessions := s.load()
 	key := sessionKey(chatID, threadID)
-	entry := sessions[key]
-	entry.SessionID = ""
-	entry.ContextTokens = 0
-	entry.ContextWindow = 0
-	entry.LastCostUSD = 0
-	sessions[key] = entry
+	entry, exists := sessions[key]
+	if !exists {
+		return
+	}
+	sessions[key] = SessionData{CostUSD: entry.CostUSD}
 	s.save(sessions)
 }
 
