@@ -219,21 +219,9 @@ To set up or update the service:
 
 If `TELEGRAM_BOT_TOKEN` is configured, ask the user if they want to register bot commands with Telegram so they appear in the command menu when typing `/`.
 
-If they agree, run the `/commands` skill: read all SKILL.md files in `.claude/skills/*/SKILL.md`, extract the `name` and `description` from each frontmatter, and combine them with these hardcoded commands:
+If they agree, invoke the `/commands` skill (read `.claude/skills/commands/SKILL.md` and follow its instructions).
 
-- `chatid`: "Get your Telegram chat ID"
-- `cancel`: "Cancel the current request"
-- `compact`: "Compact conversation context to free up space"
-
-Then call the Telegram API:
-
-```bash
-curl -s https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setMyCommands \
-  -H "Content-Type: application/json" \
-  -d '{"commands": [...]}'
-```
-
-Report the registered commands and confirm success. If they decline, tell them they can run `/commands` later.
+If they decline, tell them they can run `/commands` later.
 
 ## Step 14: Done
 

@@ -65,7 +65,7 @@ func (s *SessionStore) SetIfAbsent(chatID, threadID int64, sessionID string) {
 	s.save(sessions)
 }
 
-// costOnly skips the context snapshot — used for isolated sessions whose context is throwaway.
+// costOnly skips the context snapshot - used for isolated sessions whose context is throwaway.
 func (s *SessionStore) UpdateUsage(chatID, threadID int64, modelUsage map[string]models.ModelUsage, costOnly bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
