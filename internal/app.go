@@ -360,7 +360,6 @@ func (a *App) clearSession(chatID, threadID int64) {
 		return
 	}
 	a.sessions.Clear(chatID, threadID)
-	a.bot.SendMessage(chatID, threadID, "Context cleared. Next message will start a fresh session.")
 }
 
 func (a *App) showUsage(chatID, threadID int64) {
