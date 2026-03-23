@@ -11,7 +11,6 @@ import (
 	"miniclaw/internal/models"
 )
 
-// SessionData holds the session ID and usage metrics for a chat/thread pair.
 type SessionData struct {
 	SessionID     string  `json:"sessionID"`
 	ContextTokens int     `json:"contextTokens,omitempty"`
@@ -20,7 +19,6 @@ type SessionData struct {
 	LastCostUSD   float64 `json:"lastCostUSD,omitempty"`
 }
 
-// SessionStore maps chatID (or chatID:threadID) to session data.
 // All reads and writes go directly to disk; the mutex serialises Go-side access only.
 type SessionStore struct {
 	path string
@@ -67,9 +65,7 @@ func (s *SessionStore) SetIfAbsent(chatID, threadID int64, sessionID string) {
 	s.save(sessions)
 }
 
-// UpdateUsage overwrites the context snapshot and accumulates cost.
-// If costOnly is true, only cost is accumulated (context snapshot is not overwritten).
-// This is used for isolated sessions where the context is a throwaway.
+// costOnly skips the context snapshot — used for isolated sessions whose context is throwaway.
 func (s *SessionStore) UpdateUsage(chatID, threadID int64, modelUsage map[string]models.ModelUsage, costOnly bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -99,7 +95,6 @@ func (s *SessionStore) UpdateUsage(chatID, threadID int64, modelUsage map[string
 	s.save(sessions)
 }
 
-// GetUsage returns the stored usage data for a thread.
 func (s *SessionStore) GetUsage(chatID, threadID int64) SessionData {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -108,7 +103,6 @@ func (s *SessionStore) GetUsage(chatID, threadID int64) SessionData {
 	return sessions[sessionKey(chatID, threadID)]
 }
 
-// TotalCost returns the sum of CostUSD across all threads.
 func (s *SessionStore) TotalCost() float64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -120,8 +114,7 @@ func (s *SessionStore) TotalCost() float64 {
 	return total
 }
 
-// load reads sessions from disk. Handles both the current struct format
-// and the legacy map[string]string format for backward compatibility.
+// Supports legacy map[string]string format for backward compatibility.
 func (s *SessionStore) load() map[string]SessionData {
 	data, err := os.ReadFile(s.path)
 	if err != nil {
@@ -131,13 +124,11 @@ func (s *SessionStore) load() map[string]SessionData {
 		return make(map[string]SessionData)
 	}
 
-	// Try new format first
 	sessions := make(map[string]SessionData)
 	if err := json.Unmarshal(data, &sessions); err == nil {
 		return sessions
 	}
 
-	// Fall back to legacy map[string]string format
 	legacy := make(map[string]string)
 	if err := json.Unmarshal(data, &legacy); err != nil {
 		log.Printf("error parsing sessions file: %v", err)

@@ -19,7 +19,6 @@ type AgentOutput struct {
 	ModelUsage map[string]ModelUsage
 }
 
-// ModelUsage holds token counts and cost for a single model from one CLI invocation.
 type ModelUsage struct {
 	InputTokens              int     `json:"inputTokens"`
 	OutputTokens             int     `json:"outputTokens"`
