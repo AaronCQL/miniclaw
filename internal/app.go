@@ -125,8 +125,6 @@ func (a *App) runQueued(input models.AgentInput) {
 	a.runAgentWithFeedback(ctx, input)
 }
 
-// runAgentWithFeedback runs the agent with typing indicators, status tracking, and result sending.
-// Used by both user messages (via runQueued) and scheduled tasks (via runQueuedTask).
 func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput) (models.AgentOutput, error) {
 	if input.TaskName != "" {
 		a.bot.SendMessage(input.ChatID, input.ThreadID, fmt.Sprintf("⏱ Running scheduled task <code>%s</code>...", input.TaskName))

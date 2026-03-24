@@ -10,7 +10,7 @@ type AgentInput struct {
 	ReplyToContent  string // content of the message being replied to (empty if not a reply)
 	ReplyToFilePath string // local path to replied-to message's attachment, if any
 	IsolatedSession bool   // run in an isolated throwaway session, don't resume or save
-	TaskName        string // scheduled task filename, empty for user messages
+	TaskName        string
 }
 
 type AgentOutput struct {
