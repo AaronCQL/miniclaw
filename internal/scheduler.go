@@ -16,19 +16,15 @@ import (
 
 type RunFunc func(ctx context.Context, input models.AgentInput) (models.AgentOutput, error)
 
-type SendOutputFunc func(chatID, threadID int64, result string)
-
 type Scheduler struct {
-	config     Config
-	runFunc    RunFunc
-	sendOutput SendOutputFunc
+	config  Config
+	runFunc RunFunc
 }
 
-func NewScheduler(cfg Config, runFunc RunFunc, sendOutput SendOutputFunc) *Scheduler {
+func NewScheduler(cfg Config, runFunc RunFunc) *Scheduler {
 	return &Scheduler{
-		config:     cfg,
-		runFunc:    runFunc,
-		sendOutput: sendOutput,
+		config:  cfg,
+		runFunc: runFunc,
 	}
 }
 
@@ -82,16 +78,15 @@ func (s *Scheduler) executeDueTasks(ctx context.Context) {
 
 		log.Printf("[task] executing %s (chat=%d schedule=%s/%s)", task.Filename, task.ChatID, task.ScheduleType, task.ScheduleValue)
 
-		output, err := s.runFunc(ctx, models.AgentInput{
+		_, err = s.runFunc(ctx, models.AgentInput{
 			ChatID:          task.ChatID,
 			ThreadID:        task.ThreadID,
 			Prompt:          task.Prompt,
 			IsolatedSession: task.IsolatedSession,
+			TaskName:        task.Filename,
 		})
 
-		if err == nil && output.Result != "" {
-			s.sendOutput(task.ChatID, task.ThreadID, output.Result)
-		} else if err != nil {
+		if err != nil {
 			log.Printf("[task] error running %s: %v", task.Filename, err)
 		}
 

@@ -55,7 +55,7 @@ func NewApp(cfg Config) *App {
 	a.bot.onUsage = a.showUsage
 	a.bot.onClear = a.clearSession
 
-	a.scheduler = NewScheduler(cfg, a.runQueuedTask, a.sendAgentOutput)
+	a.scheduler = NewScheduler(cfg, a.runQueuedTask)
 
 	return a
 }
@@ -108,11 +108,7 @@ func (a *App) runQueuedTask(ctx context.Context, input models.AgentInput) (model
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
-	output, err := a.agentRunner.Run(ctx, input, nil, nil)
-	if err == nil && output.ModelUsage != nil {
-		a.sessions.UpdateUsage(input.ChatID, input.ThreadID, output.ModelUsage, input.IsolatedSession)
-	}
-	return output, err
+	return a.runAgentWithFeedback(ctx, input)
 }
 
 // runQueued acquires the per-chat/thread mutex, blocking until any prior agent finishes.
@@ -124,20 +120,27 @@ func (a *App) runQueued(input models.AgentInput) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cs.cancel.Store(&cancel)
 	defer cs.cancel.Store(nil)
-
-	a.startAgent(ctx, cancel, input)
-}
-
-func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input models.AgentInput) {
 	defer cancel()
 
+	a.runAgentWithFeedback(ctx, input)
+}
+
+// runAgentWithFeedback runs the agent with typing indicators, status tracking, and result sending.
+// Used by both user messages (via runQueued) and scheduled tasks (via runQueuedTask).
+func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput) (models.AgentOutput, error) {
+	if input.TaskName != "" {
+		a.bot.SendMessage(input.ChatID, input.ThreadID, fmt.Sprintf("⏱ Running scheduled task <code>%s</code>...", input.TaskName))
+	}
+
+	typingCtx, typingCancel := context.WithCancel(ctx)
+	defer typingCancel()
 	go func() {
 		a.bot.SendTyping(input.ChatID, input.ThreadID)
 		ticker := time.NewTicker(4 * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-typingCtx.Done():
 				return
 			case <-ticker.C:
 				a.bot.SendTyping(input.ChatID, input.ThreadID)
@@ -210,9 +213,10 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 		toolCallback = onToolUse
 		textCallback = onText
 	}
+
 	output, err := a.agentRunner.Run(ctx, input, toolCallback, textCallback)
 	if output.ModelUsage != nil {
-		a.sessions.UpdateUsage(input.ChatID, input.ThreadID, output.ModelUsage, false)
+		a.sessions.UpdateUsage(input.ChatID, input.ThreadID, output.ModelUsage, input.IsolatedSession)
 	}
 
 	mu.Lock()
@@ -228,8 +232,10 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 			if statusMsgID != 0 {
 				a.bot.EditMessage(input.ChatID, statusMsgID, tracker.RenderDone()+"❌ Cancelled")
 			}
-			a.bot.SendReply(input.ChatID, input.ThreadID, input.MessageID, "Cancelled.")
-			return
+			if input.MessageID != 0 {
+				a.bot.SendReply(input.ChatID, input.ThreadID, input.MessageID, "Cancelled.")
+			}
+			return output, err
 		}
 		log.Printf("agent error for chat %d thread %d: %v", input.ChatID, input.ThreadID, err)
 		if statusMsgID != 0 {
@@ -242,7 +248,7 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 			errMsg = "Sorry, I encountered an unknown error. Check logs for details."
 		}
 		a.bot.SendMessage(input.ChatID, input.ThreadID, errMsg)
-		return
+		return output, err
 	}
 
 	// Workaround: Claude CLI's stream-json sets stop_reason=null on all assistant
@@ -264,6 +270,8 @@ func (a *App) startAgent(ctx context.Context, cancel context.CancelFunc, input m
 	if output.Result != "" {
 		a.sendAgentOutput(input.ChatID, input.ThreadID, output.Result)
 	}
+
+	return output, err
 }
 
 func (a *App) sendAgentOutput(chatID, threadID int64, result string) {
