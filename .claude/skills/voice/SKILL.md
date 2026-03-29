@@ -21,7 +21,7 @@ When the agent completes, relay its response directly to the user without modifi
 
 ### Sub-agent prompt
 
-```
+```md
 Go through all conversation transcripts, extract user messages, and update the voice and typing style guide.
 
 ## Step 1: Find transcripts

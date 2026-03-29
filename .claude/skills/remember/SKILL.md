@@ -21,7 +21,7 @@ When the agent completes, relay its response directly to the user without modifi
 
 ### Sub-agent prompt
 
-```
+```md
 Scan all recent conversation transcripts, extract key context, and update auto memory.
 
 ## Step 1: Find transcripts
