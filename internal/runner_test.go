@@ -2,7 +2,10 @@ package internal
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
+	"time"
 
 	"miniclaw/internal/models"
 )
@@ -138,6 +141,15 @@ func TestToolLabel(t *testing.T) {
 func TestBuildPrompt(t *testing.T) {
 	r := &AgentRunner{}
 
+	// The timestamp prefix is always injected; build the expected prefix dynamically.
+	now := time.Now()
+	if tz := os.Getenv("MINICLAW_TIMEZONE"); tz != "" {
+		if loc, err := time.LoadLocation(tz); err == nil {
+			now = now.In(loc)
+		}
+	}
+	ts := fmt.Sprintf("[Current time: %s]", now.Format("2006-01-02 15:04 -07:00"))
+
 	tests := []struct {
 		name  string
 		input models.AgentInput
@@ -146,17 +158,17 @@ func TestBuildPrompt(t *testing.T) {
 		{
 			name:  "simple prompt",
 			input: models.AgentInput{Prompt: "hello"},
-			want:  "hello",
+			want:  ts + "\n\nhello",
 		},
 		{
 			name:  "prompt with file",
 			input: models.AgentInput{Prompt: "check this", FilePath: "/tmp/photo.jpg"},
-			want:  "[File attached: /tmp/photo.jpg - use the Read tool to view this file]\n\ncheck this",
+			want:  ts + "\n\n[File attached: /tmp/photo.jpg - use the Read tool to view this file]\n\ncheck this",
 		},
 		{
 			name:  "file only no prompt",
 			input: models.AgentInput{FilePath: "/tmp/doc.pdf"},
-			want:  "[File attached: /tmp/doc.pdf - use the Read tool to view this file]\n\nThe user sent a file. Please view and describe or analyse it.",
+			want:  ts + "\n\n[File attached: /tmp/doc.pdf - use the Read tool to view this file]\n\nThe user sent a file. Please view and describe or analyse it.",
 		},
 		{
 			name: "reply context",
@@ -165,7 +177,7 @@ func TestBuildPrompt(t *testing.T) {
 				ReplyToSender:  "Alice",
 				ReplyToContent: "some earlier message",
 			},
-			want: "[Replying to Alice: some earlier message]\n\nwhat about this?",
+			want: ts + "\n\n[Replying to Alice: some earlier message]\n\nwhat about this?",
 		},
 		{
 			name: "reply with file attachment on replied-to message",
@@ -175,7 +187,7 @@ func TestBuildPrompt(t *testing.T) {
 				ReplyToContent:  "here's the file",
 				ReplyToFilePath: "/tmp/reply.png",
 			},
-			want: "[Replying to Bob: here's the file]\n\n[Replied-to message has file attached: /tmp/reply.png - use the Read tool to view this file]\n\nsee the file",
+			want: ts + "\n\n[Replying to Bob: here's the file]\n\n[Replied-to message has file attached: /tmp/reply.png - use the Read tool to view this file]\n\nsee the file",
 		},
 		{
 			name: "all fields populated",
@@ -186,12 +198,12 @@ func TestBuildPrompt(t *testing.T) {
 				ReplyToContent:  "original",
 				ReplyToFilePath: "/tmp/orig.txt",
 			},
-			want: "[Replying to Eve: original]\n\n[Replied-to message has file attached: /tmp/orig.txt - use the Read tool to view this file]\n\n[File attached: /tmp/my.txt - use the Read tool to view this file]\n\ndo something",
+			want: ts + "\n\n[Replying to Eve: original]\n\n[Replied-to message has file attached: /tmp/orig.txt - use the Read tool to view this file]\n\n[File attached: /tmp/my.txt - use the Read tool to view this file]\n\ndo something",
 		},
 		{
 			name:  "empty input",
 			input: models.AgentInput{},
-			want:  "",
+			want:  ts,
 		},
 	}
 
