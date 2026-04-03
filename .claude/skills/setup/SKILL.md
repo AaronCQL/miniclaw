@@ -44,13 +44,6 @@ Run `mkdir -p ~/.miniclaw/{data/tasks,workspace}`. This is already idempotent. R
 
 Read `agent/CLAUDE.md` and show the user the current bot name (on line 3, e.g. "You are Enki"). Ask if they want to change it. Only edit the file if they request a change.
 
-Then detect the server's timezone:
-
-- **Linux:** `timedatectl show -p Timezone --value`
-- **macOS:** `readlink /etc/localtime | sed 's|.*/zoneinfo/||'`
-
-Show the detected timezone and ask the user if it matches their local timezone. If it does, skip `MINICLAW_TIMEZONE` entirely (the system fallback handles it). If it doesn't, ask for their IANA timezone (e.g. `Asia/Singapore`, `Europe/London`, `America/New_York`) and hold onto the value for the .env write step.
-
 ## Step 6: Read existing .env (if any)
 
 Before asking for configuration values, check if `~/.miniclaw/.env` already exists by reading it with `cat ~/.miniclaw/.env 2>/dev/null`. Parse out the current values of:
@@ -62,9 +55,20 @@ Before asking for configuration values, check if `~/.miniclaw/.env` already exis
 
 Also check for `GROQ_API_KEY`.
 
-Hold onto these values. Steps 7-10 will only prompt for values that are missing or empty.
+Hold onto these values. Steps 7-11 will only prompt for values that are missing or empty.
 
-## Step 7: Telegram bot token
+## Step 7: Detect timezone
+
+If `MINICLAW_TIMEZONE` already has a non-empty value in the existing .env, report the current value and ask if they want to change it. If they don't, skip.
+
+Otherwise, detect the server's timezone:
+
+- **Linux:** `timedatectl show -p Timezone --value`
+- **macOS:** `readlink /etc/localtime | sed 's|.*/zoneinfo/||'`
+
+Show the detected timezone and ask the user if it matches their local timezone. If it does, skip `MINICLAW_TIMEZONE` entirely (the system fallback handles it). If it doesn't, ask for their IANA timezone (e.g. `Asia/Singapore`, `Europe/London`, `America/New_York`) and hold onto the value for the .env write step.
+
+## Step 8: Telegram bot token
 
 If `TELEGRAM_BOT_TOKEN` already has a non-empty value in the existing .env, report that a token is already configured (show a masked version, e.g. `714...XYz`) and skip this step.
 
@@ -74,15 +78,15 @@ Otherwise, ask the user for their Telegram bot token. Tell them:
 - Use the `/newbot` command and follow the prompts
 - Copy the token BotFather gives you
 
-The user may also choose to skip and add it later. Hold onto the value for Step 10.
+The user may also choose to skip and add it later. Hold onto the value for Step 11.
 
-## Step 8: Agent directory
+## Step 9: Agent directory
 
 Determine the absolute path to the `agent/` directory in the current repo by running `ls` on it. This is the `MINICLAW_AGENT_DIR` value.
 
-If the existing .env already has a correct `MINICLAW_AGENT_DIR` that matches this path, skip silently. Otherwise, hold onto the new value for Step 10.
+If the existing .env already has a correct `MINICLAW_AGENT_DIR` that matches this path, skip silently. Otherwise, hold onto the new value for Step 12.
 
-## Step 9: Allowed chat IDs
+## Step 10: Allowed chat IDs
 
 If `ALLOWED_CHAT_IDS` already has a non-empty value in the existing .env, report the current value and ask if they want to change it. If they don't, skip.
 
@@ -93,9 +97,9 @@ Otherwise, ask the user for their allowed Telegram chat IDs (comma-separated). T
 - Group chats have negative IDs (e.g. `-1001234567890`)
 - Private chats have positive IDs
 
-Hold onto the value for Step 10.
+Hold onto the value for Step 12.
 
-## Step 10: Groq API key (optional)
+## Step 11: Groq API key (optional)
 
 If `GROQ_API_KEY` already has a non-empty value in the existing .env, report that a key is already configured (show a masked version) and skip.
 
@@ -105,9 +109,9 @@ Otherwise, tell the user:
 - Sign up at https://console.groq.com and create an API key
 - The free tier is generous (2,000 requests/day, 8 hours of audio/day)
 
-The user may skip this and add it later. Hold onto the value for Step 11.
+The user may skip this and add it later. Hold onto the value for Step 12.
 
-## Step 11: Write .env file
+## Step 12: Write .env file
 
 If `~/.miniclaw/.env` already exists and all values (`TELEGRAM_BOT_TOKEN`, `ALLOWED_CHAT_IDS`, `MINICLAW_AGENT_DIR`, `MINICLAW_TIMEZONE`, and optionally `GROQ_API_KEY`) are correct, report that the .env file is already up to date and skip writing.
 
@@ -123,7 +127,7 @@ GROQ_API_KEY=<key, if provided>
 
 Use the Bash tool to write this file with `0600` permissions. Do NOT use the Write tool (the path is outside the project).
 
-## Step 12: Background service (optional)
+## Step 13: Background service (optional)
 
 First, detect the platform by running `uname -s`. If the result is `Darwin`, follow the **macOS (launchd)** path. Otherwise, follow the **Linux (systemd)** path.
 
@@ -135,7 +139,7 @@ Check if `~/.config/systemd/user/miniclaw.service` already exists. If it does, r
 - If the service file exists but `ExecStart` is wrong, tell the user and offer to update it.
 - If the service file does not exist, ask the user if they want to set up systemd.
 
-If they decline, skip to Step 13.
+If they decline, skip to Step 14.
 
 To set up or update the service:
 
@@ -175,7 +179,7 @@ Check if `~/Library/LaunchAgents/com.miniclaw.agent.plist` already exists. If it
 - If the plist exists but the binary path is wrong, tell the user and offer to update it.
 - If the plist does not exist, ask the user if they want to set up launchd.
 
-If they decline, skip to Step 13.
+If they decline, skip to Step 14.
 
 To set up or update the service:
 
@@ -224,7 +228,7 @@ To set up or update the service:
 6. Load the service: `launchctl load ~/Library/LaunchAgents/com.miniclaw.agent.plist`
 7. Verify it's running: `launchctl list | grep com.miniclaw.agent`
 
-## Step 13: Register bot commands (optional)
+## Step 14: Register bot commands (optional)
 
 If `TELEGRAM_BOT_TOKEN` is configured, ask the user if they want to register bot commands with Telegram so they appear in the command menu when typing `/`.
 
@@ -232,7 +236,7 @@ If they agree, invoke the `/commands` skill (read `.claude/skills/commands/SKILL
 
 If they decline, tell them they can run `/commands` later.
 
-## Step 14: Done
+## Step 15: Done
 
 Print a summary:
 
