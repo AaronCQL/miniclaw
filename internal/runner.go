@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"miniclaw/internal/models"
 )
@@ -239,6 +240,14 @@ func codeTag(s string) string {
 
 func (r *AgentRunner) buildPrompt(input models.AgentInput) string {
 	var parts []string
+
+	now := time.Now()
+	if tz := os.Getenv("MINICLAW_TIMEZONE"); tz != "" {
+		if loc, err := time.LoadLocation(tz); err == nil {
+			now = now.In(loc)
+		}
+	}
+	parts = append(parts, fmt.Sprintf("[Current time: %s]", now.Format("2006-01-02 15:04 -07:00")))
 
 	if input.ReplyToContent != "" {
 		parts = append(parts, fmt.Sprintf("[Replying to %s: %s]", input.ReplyToSender, input.ReplyToContent))

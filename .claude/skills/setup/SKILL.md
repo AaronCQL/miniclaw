@@ -42,7 +42,13 @@ Run `mkdir -p ~/.miniclaw/{data/tasks,workspace}`. This is already idempotent. R
 
 ## Step 5: Personalise agent
 
-Read `agent/CLAUDE.md` and show the user the current bot name (on line 3, e.g. "You are Enki") and timezone (under `Behaviour > General`). Ask if they want to change either one. Only edit the file if they request a change.
+Read `agent/CLAUDE.md` and show the user the current bot name (on line 3, e.g. "You are Enki"). Ask if they want to change it. Only edit the file if they request a change.
+
+Then ask for their IANA timezone (e.g. `Asia/Singapore`, `Europe/London`, `America/New_York`). This is stored as `MINICLAW_TIMEZONE` in the .env file and controls the timestamp injected into each message so the agent knows the user's local time.
+
+If they're unsure, suggest they run `timedatectl show -p Timezone --value` (Linux) or check their system settings. If left empty, the server's system timezone is used as the fallback.
+
+Hold onto the value for the .env write step.
 
 ## Step 6: Read existing .env (if any)
 
@@ -51,6 +57,7 @@ Before asking for configuration values, check if `~/.miniclaw/.env` already exis
 - `TELEGRAM_BOT_TOKEN`
 - `ALLOWED_CHAT_IDS`
 - `MINICLAW_AGENT_DIR`
+- `MINICLAW_TIMEZONE`
 
 Also check for `GROQ_API_KEY`.
 
@@ -101,7 +108,7 @@ The user may skip this and add it later. Hold onto the value for Step 11.
 
 ## Step 11: Write .env file
 
-If `~/.miniclaw/.env` already exists and all values (`TELEGRAM_BOT_TOKEN`, `ALLOWED_CHAT_IDS`, `MINICLAW_AGENT_DIR`, and optionally `GROQ_API_KEY`) are correct, report that the .env file is already up to date and skip writing.
+If `~/.miniclaw/.env` already exists and all values (`TELEGRAM_BOT_TOKEN`, `ALLOWED_CHAT_IDS`, `MINICLAW_AGENT_DIR`, `MINICLAW_TIMEZONE`, and optionally `GROQ_API_KEY`) are correct, report that the .env file is already up to date and skip writing.
 
 Otherwise, write `~/.miniclaw/.env` with the merged values (existing values for fields that didn't change, new values for fields that did):
 
@@ -109,6 +116,7 @@ Otherwise, write `~/.miniclaw/.env` with the merged values (existing values for 
 TELEGRAM_BOT_TOKEN=<token>
 ALLOWED_CHAT_IDS=<chat IDs>
 MINICLAW_AGENT_DIR=<absolute path to agent/>
+MINICLAW_TIMEZONE=<IANA timezone, if provided>
 GROQ_API_KEY=<key, if provided>
 ```
 
