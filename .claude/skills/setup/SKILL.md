@@ -44,11 +44,12 @@ Run `mkdir -p ~/.miniclaw/{data/tasks,workspace}`. This is already idempotent. R
 
 Read `agent/CLAUDE.md` and show the user the current bot name (on line 3, e.g. "You are Enki"). Ask if they want to change it. Only edit the file if they request a change.
 
-Then ask for their IANA timezone (e.g. `Asia/Singapore`, `Europe/London`, `America/New_York`). This is stored as `MINICLAW_TIMEZONE` in the .env file and controls the timestamp injected into each message so the agent knows the user's local time.
+Then detect the server's timezone:
 
-If they're unsure, suggest they run `timedatectl show -p Timezone --value` (Linux) or check their system settings. If left empty, the server's system timezone is used as the fallback.
+- **Linux:** `timedatectl show -p Timezone --value`
+- **macOS:** `readlink /etc/localtime | sed 's|.*/zoneinfo/||'`
 
-Hold onto the value for the .env write step.
+Show the detected timezone and ask the user if it matches their local timezone. If it does, skip `MINICLAW_TIMEZONE` entirely (the system fallback handles it). If it doesn't, ask for their IANA timezone (e.g. `Asia/Singapore`, `Europe/London`, `America/New_York`) and hold onto the value for the .env write step.
 
 ## Step 6: Read existing .env (if any)
 
