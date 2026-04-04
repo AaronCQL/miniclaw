@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.5.0 (2026-04-04)
+
+### Features
+
+- Inject current time per message with configurable timezone (#11)
+
+### Improvements
+
+- Add md language identifier to sub-agent prompt code blocks
+
 ## v0.4.0 (2026-03-26)
 
 ### Features
