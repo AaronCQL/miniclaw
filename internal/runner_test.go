@@ -113,6 +113,11 @@ func TestToolLabel(t *testing.T) {
 			want: "",
 		},
 		{
+			name: "Skill with name",
+			tool: "Skill", input: map[string]any{"skill": "release"},
+			want: "Skill: /release",
+		},
+		{
 			name: "EnterPlanMode",
 			tool: "EnterPlanMode", input: map[string]any{},
 			want: "Plan mode",

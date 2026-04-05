@@ -16,6 +16,7 @@ var toolEmoji = map[string]string{
 	"WebFetch":      "🌐",
 	"Agent":         "🧠",
 	"Task":          "🤖",
+	"Skill":         "🦾",
 	"EnterPlanMode": "📝",
 	"TodoWrite":     "🏗️",
 }
