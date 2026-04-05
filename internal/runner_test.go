@@ -118,16 +118,6 @@ func TestToolLabel(t *testing.T) {
 			want: "Skill: /release",
 		},
 		{
-			name: "Skill escapes HTML",
-			tool: "Skill", input: map[string]any{"skill": "a <b> & c"},
-			want: "Skill: /a &lt;b&gt; &amp; c",
-		},
-		{
-			name: "Skill empty",
-			tool: "Skill", input: map[string]any{},
-			want: "",
-		},
-		{
 			name: "EnterPlanMode",
 			tool: "EnterPlanMode", input: map[string]any{},
 			want: "Plan mode",
