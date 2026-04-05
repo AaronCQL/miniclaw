@@ -228,6 +228,10 @@ func toolLabel(name string, input map[string]any) string {
 				}
 			}
 		}
+	case "Skill":
+		if s := getString("skill"); s != "" {
+			return "Skill: /" + html.EscapeString(s)
+		}
 	case "EnterPlanMode":
 		return "Plan mode"
 	}
