@@ -291,8 +291,7 @@ func (a *App) sendAgentOutput(chatID, threadID int64, result string) {
 		RemoveOutbox(outboxPath)
 	}
 
-	result = FormatTelegramHTML(result)
-	if err := a.bot.SendMessage(chatID, threadID, result); err != nil {
+	if err := a.bot.SendMessage(chatID, threadID, FormatTelegramHTML(result)); err != nil {
 		log.Printf("error sending message to chat %d: %v", chatID, err)
 	}
 }
