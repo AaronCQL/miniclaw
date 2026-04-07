@@ -17,7 +17,7 @@ ls -1 ../.claude/skills/
 ls -1 ~/.claude/skills/
 ```
 
-For each directory found in either location, read its `SKILL.md` file using the Read tool. Extract the `name` and `description` fields from the YAML frontmatter. If a skill exists in both locations, the personal one (~/.claude) takes precedence.
+For each directory found in either location, read its `SKILL.md` file using the Read tool. Extract the `name`, `description`, and `disable-model-invocation` fields from the YAML frontmatter. If a skill exists in both locations, the personal one (~/.claude) takes precedence. **Skip any skill that has `disable-model-invocation: true`**.
 
 ## Step 2: Build the command list
 

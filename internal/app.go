@@ -50,7 +50,6 @@ func NewApp(cfg Config) *App {
 	}
 	a.bot = bot
 	a.bot.onCancel = a.cancelAgent
-	a.bot.onRestart = a.restartAgent
 	a.bot.onLogs = a.toggleLogs
 	a.bot.onUsage = a.showUsage
 	a.bot.onClear = a.clearSession
@@ -260,7 +259,7 @@ func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput)
 			a.bot.EditMessage(input.ChatID, statusMsgID, final)
 		} else if output.Result != "" {
 			// Status only had the final response - edit it to become the result
-			a.bot.EditMessage(input.ChatID, statusMsgID, output.Result)
+			a.bot.EditMessage(input.ChatID, statusMsgID, FormatTelegramHTML(output.Result))
 			output.Result = ""
 		}
 	}
@@ -285,40 +284,18 @@ func (a *App) sendAgentOutput(chatID, threadID int64, result string) {
 				log.Printf("[outbox] chat=%d skipping %s: %v", chatID, entry.Path, err)
 				continue
 			}
-			if err := a.bot.SendFile(chatID, threadID, entry.Path, entry.Caption); err != nil {
+			caption := FormatTelegramHTML(entry.Caption)
+			if err := a.bot.SendFile(chatID, threadID, entry.Path, caption); err != nil {
 				log.Printf("[outbox] chat=%d failed to send %s: %v", chatID, entry.Path, err)
 			}
 		}
 		RemoveOutbox(outboxPath)
 	}
 
+	result = FormatTelegramHTML(result)
 	if err := a.bot.SendMessage(chatID, threadID, result); err != nil {
 		log.Printf("error sending message to chat %d: %v", chatID, err)
 	}
-}
-
-func (a *App) restartAgent(chatID, threadID int64) {
-	if !a.isAllowed(chatID) {
-		log.Printf("restart from unauthorised chat %d, ignoring", chatID)
-		return
-	}
-
-	// Cancel any running agent so the restart doesn't queue behind it.
-	// Restart is global: cancel the non-threaded (threadID=0) agent.
-	cs := a.getChatState(chatID, 0)
-	if fn := cs.cancel.Load(); fn != nil {
-		(*fn)()
-	}
-
-	a.bot.SendMessage(chatID, threadID, "Restarting miniclaw...")
-
-	input := models.AgentInput{
-		ChatID:   chatID,
-		ThreadID: threadID,
-		Prompt:   "/restart",
-	}
-
-	go a.runQueued(input)
 }
 
 func (a *App) cancelAgent(chatID, threadID int64) {

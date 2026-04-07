@@ -1,7 +1,6 @@
 ---
 name: restart
 description: Rebuild miniclaw and restart the background service
-disable-model-invocation: true
 allowed-tools: "Bash(source *), Bash(go install *), Bash(date *), Bash(cat *), Bash(uname *), Bash(systemctl --user restart miniclaw), Bash(launchctl *)"
 ---
 

@@ -79,7 +79,7 @@ func (s *statusTracker) renderEntries(showSpinner bool) string {
 			if strings.HasSuffix(label, ":") {
 				label = label[:len(label)-1] + "."
 			}
-			line = "<i>" + label + "</i>"
+			line = "<i>" + FormatTelegramHTML(label) + "</i>"
 		}
 
 		// Last entry gets spinner; text entries get a blank line before them
