@@ -253,21 +253,19 @@ func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput)
 	// during streaming. We show all text immediately, then retroactively remove
 	// the final response via DropText once the result event arrives.
 	// TODO: simplify if Claude CLI exposes stop_reason on assistant events.
-	formattedResult := FormatTelegramHTML(output.Result)
-
 	if statusMsgID != 0 {
 		tracker.DropText(output.Result)
 		if final := tracker.RenderFinal(); final != "" {
 			a.bot.EditMessage(input.ChatID, statusMsgID, final)
-		} else if formattedResult != "" {
+		} else if output.Result != "" {
 			// Status only had the final response - edit it to become the result
-			a.bot.EditMessage(input.ChatID, statusMsgID, formattedResult)
-			formattedResult = ""
+			a.bot.EditMessage(input.ChatID, statusMsgID, FormatTelegramHTML(output.Result))
+			output.Result = ""
 		}
 	}
 
-	if formattedResult != "" {
-		a.sendAgentOutput(input.ChatID, input.ThreadID, formattedResult)
+	if output.Result != "" {
+		a.sendAgentOutput(input.ChatID, input.ThreadID, output.Result)
 	}
 
 	return output, err
@@ -286,14 +284,14 @@ func (a *App) sendAgentOutput(chatID, threadID int64, result string) {
 				log.Printf("[outbox] chat=%d skipping %s: %v", chatID, entry.Path, err)
 				continue
 			}
-			caption := FormatTelegramHTML(entry.Caption)
-			if err := a.bot.SendFile(chatID, threadID, entry.Path, caption); err != nil {
+			if err := a.bot.SendFile(chatID, threadID, entry.Path, FormatTelegramHTML(entry.Caption)); err != nil {
 				log.Printf("[outbox] chat=%d failed to send %s: %v", chatID, entry.Path, err)
 			}
 		}
 		RemoveOutbox(outboxPath)
 	}
 
+	result = FormatTelegramHTML(result)
 	if err := a.bot.SendMessage(chatID, threadID, result); err != nil {
 		log.Printf("error sending message to chat %d: %v", chatID, err)
 	}
