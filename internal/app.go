@@ -253,19 +253,21 @@ func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput)
 	// during streaming. We show all text immediately, then retroactively remove
 	// the final response via DropText once the result event arrives.
 	// TODO: simplify if Claude CLI exposes stop_reason on assistant events.
+	formattedResult := FormatTelegramHTML(output.Result)
+
 	if statusMsgID != 0 {
 		tracker.DropText(output.Result)
 		if final := tracker.RenderFinal(); final != "" {
 			a.bot.EditMessage(input.ChatID, statusMsgID, final)
-		} else if output.Result != "" {
+		} else if formattedResult != "" {
 			// Status only had the final response - edit it to become the result
-			a.bot.EditMessage(input.ChatID, statusMsgID, FormatTelegramHTML(output.Result))
-			output.Result = ""
+			a.bot.EditMessage(input.ChatID, statusMsgID, formattedResult)
+			formattedResult = ""
 		}
 	}
 
-	if output.Result != "" {
-		a.sendAgentOutput(input.ChatID, input.ThreadID, output.Result)
+	if formattedResult != "" {
+		a.sendAgentOutput(input.ChatID, input.ThreadID, formattedResult)
 	}
 
 	return output, err
@@ -292,7 +294,6 @@ func (a *App) sendAgentOutput(chatID, threadID int64, result string) {
 		RemoveOutbox(outboxPath)
 	}
 
-	result = FormatTelegramHTML(result)
 	if err := a.bot.SendMessage(chatID, threadID, result); err != nil {
 		log.Printf("error sending message to chat %d: %v", chatID, err)
 	}
