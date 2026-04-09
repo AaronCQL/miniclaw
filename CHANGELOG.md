@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.6.0 (2026-04-09)
+
+### Features
+
+- Add Markdown to Telegram HTML converter (#13)
+- Show skill name in status updates (#12)
+
 ## v0.5.0 (2026-04-04)
 
 ### Features
