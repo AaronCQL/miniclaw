@@ -235,11 +235,28 @@ func toolLabel(name string, input map[string]any) string {
 	case "EnterPlanMode":
 		return "Plan mode"
 	}
+
+	// MCP tools: mcp__server__action -> "MCP: Server Action"
+	if parts := strings.SplitN(name, "__", 3); len(parts) == 3 && parts[0] == "mcp" {
+		return "MCP: " + titleCase(parts[1]) + " " + titleCase(parts[2])
+	}
+
 	return ""
 }
 
 func codeTag(s string) string {
 	return "<code>" + html.EscapeString(s) + "</code>"
+}
+
+// titleCase converts "browser_navigate" to "Browser Navigate".
+func titleCase(s string) string {
+	words := strings.Split(s, "_")
+	for i, w := range words {
+		if w != "" {
+			words[i] = strings.ToUpper(w[:1]) + w[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }
 
 func (r *AgentRunner) buildPrompt(input models.AgentInput) string {

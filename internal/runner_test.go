@@ -123,6 +123,16 @@ func TestToolLabel(t *testing.T) {
 			want: "Plan mode",
 		},
 		{
+			name: "MCP tool",
+			tool: "mcp__playwright__browser_navigate", input: map[string]any{},
+			want: "MCP: Playwright Browser Navigate",
+		},
+		{
+			name: "MCP tool with underscores",
+			tool: "mcp__some_server__do_something_cool", input: map[string]any{},
+			want: "MCP: Some Server Do Something Cool",
+		},
+		{
 			name: "unknown tool",
 			tool: "SomeNewTool", input: map[string]any{},
 			want: "",

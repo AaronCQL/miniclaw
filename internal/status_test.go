@@ -90,6 +90,16 @@ func TestStatusTracker_Add_UnknownTool(t *testing.T) {
 	}
 }
 
+func TestStatusTracker_Add_MCPTool(t *testing.T) {
+	s := newStatusTracker()
+	s.Add("mcp__playwright__browser_snapshot", "MCP: Playwright Browser Snapshot")
+
+	want := "🛠 MCP: Playwright Browser Snapshot 🟡"
+	if got := s.Render(); got != want {
+		t.Errorf("Render() = %q, want %q", got, want)
+	}
+}
+
 func TestStatusTracker_Add_EmptyLabelUsesToolName(t *testing.T) {
 	s := newStatusTracker()
 	s.Add("Read", "")

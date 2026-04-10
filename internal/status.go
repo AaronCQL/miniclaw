@@ -40,7 +40,11 @@ func (s *statusTracker) Add(toolName, label string) bool {
 	}
 	emoji, ok := toolEmoji[toolName]
 	if !ok {
-		emoji = "⚙️"
+		if strings.HasPrefix(toolName, "mcp__") {
+			emoji = "🛠"
+		} else {
+			emoji = "⚙️"
+		}
 	}
 	if label == "" {
 		label = toolName
