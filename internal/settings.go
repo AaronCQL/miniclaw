@@ -38,8 +38,8 @@ func LoadSettings(dataDir string) Settings {
 	if s.StatusLevel != StatusOff && s.StatusLevel != StatusText && s.StatusLevel != StatusVerbose {
 		s.StatusLevel = StatusText
 	}
-	if s.Effort != EffortLow && s.Effort != EffortMedium && s.Effort != EffortHigh && s.Effort != EffortMax {
-		s.Effort = EffortMedium
+	if s.Effort != "" && s.Effort != EffortLow && s.Effort != EffortMedium && s.Effort != EffortHigh && s.Effort != EffortMax {
+		s.Effort = ""
 	}
 	return s
 }

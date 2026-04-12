@@ -73,7 +73,9 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, effort s
 		"--verbose", // required by Claude CLI when using stream-json with --print
 		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
-		"--effort", effort,
+	}
+	if effort != "" {
+		args = append(args, "--effort", effort)
 	}
 
 	if input.IsolatedSession {
