@@ -91,6 +91,7 @@ Skills are slash commands the agent follows as expert instructions:
 | `/commands` | Register bot commands with Telegram | On demand |
 | `/restart` | Rebuild miniclaw and restart the background service | On demand |
 | `/review` | Review git diff, suggest commits | On demand |
+| `/effort` | View or set the effort level (low, medium, high, max, default) | On demand |
 | `/logs` | Cycle status updates: off, text only, verbose | On demand |
 | `/usage` | Show context window usage and cumulative cost | On demand |
 | `/clear` | Clear context and start a fresh session in the same thread | On demand |

@@ -29,19 +29,26 @@ type Settings struct {
 func LoadSettings(dataDir string) Settings {
 	data, err := os.ReadFile(filepath.Join(dataDir, "settings.json"))
 	if err != nil {
-		return Settings{StatusLevel: StatusText}
+		log.Printf("error loading settings.json: %v", err)
+		return Settings{StatusLevel: StatusText, Effort: EffortDefault}
 	}
 	var s Settings
 	if err := json.Unmarshal(data, &s); err != nil {
 		log.Printf("error parsing settings: %v", err)
-		return Settings{StatusLevel: StatusText}
+		return Settings{StatusLevel: StatusText, Effort: EffortDefault}
 	}
-	if s.StatusLevel != StatusOff && s.StatusLevel != StatusText && s.StatusLevel != StatusVerbose {
+	if s.StatusLevel != StatusOff &&
+		s.StatusLevel != StatusText &&
+		s.StatusLevel != StatusVerbose {
 		s.StatusLevel = StatusText
 	}
 	if s.Effort == "" {
 		s.Effort = EffortDefault
-	} else if s.Effort != EffortDefault && s.Effort != EffortLow && s.Effort != EffortMedium && s.Effort != EffortHigh && s.Effort != EffortMax {
+	} else if s.Effort != EffortDefault &&
+		s.Effort != EffortLow &&
+		s.Effort != EffortMedium &&
+		s.Effort != EffortHigh &&
+		s.Effort != EffortMax {
 		s.Effort = EffortDefault
 	}
 	return s
