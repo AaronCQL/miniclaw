@@ -26,6 +26,7 @@ Combine the discovered skills with these hardcoded commands that don't have SKIL
 - `chatid`: "Get your Telegram chat ID"
 - `cancel`: "Cancel the current request"
 - `compact`: "Compact conversation context to free up space"
+- `effort`: "View or set the effort level (low, medium, high, max, default)"
 - `logs`: "Cycle status updates: off, text only, verbose"
 - `simplify`: "Review changed code for reuse, quality, and efficiency"
 - `usage`: "Show context window usage and cumulative cost"
