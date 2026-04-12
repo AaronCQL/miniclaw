@@ -13,8 +13,16 @@ const (
 	StatusVerbose = "verbose"
 )
 
+const (
+	EffortLow    = "low"
+	EffortMedium = "medium"
+	EffortHigh   = "high"
+	EffortMax    = "max"
+)
+
 type Settings struct {
 	StatusLevel string `json:"statusLevel,omitempty"`
+	Effort      string `json:"effort,omitempty"`
 }
 
 func LoadSettings(dataDir string) Settings {
@@ -29,6 +37,9 @@ func LoadSettings(dataDir string) Settings {
 	}
 	if s.StatusLevel != StatusOff && s.StatusLevel != StatusText && s.StatusLevel != StatusVerbose {
 		s.StatusLevel = StatusText
+	}
+	if s.Effort != EffortLow && s.Effort != EffortMedium && s.Effort != EffortHigh && s.Effort != EffortMax {
+		s.Effort = EffortMedium
 	}
 	return s
 }

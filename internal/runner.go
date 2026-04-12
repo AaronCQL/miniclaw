@@ -65,7 +65,7 @@ type streamContent struct {
 	Input map[string]any `json:"input"`
 }
 
-func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUse func(toolName, label string), onText func(text string)) (models.AgentOutput, error) {
+func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, effort string, onToolUse func(toolName, label string), onText func(text string)) (models.AgentOutput, error) {
 	prompt := r.buildPrompt(input)
 
 	args := []string{
@@ -73,6 +73,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, onToolUs
 		"--verbose", // required by Claude CLI when using stream-json with --print
 		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
+		"--effort", effort,
 	}
 
 	if input.IsolatedSession {

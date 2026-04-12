@@ -33,6 +33,7 @@ type TelegramBot struct {
 	onMessage func(msg models.Message)
 	onCancel  func(chatID, threadID int64)
 	onLogs    func(chatID, threadID int64)
+	onEffort  func(chatID, threadID int64, level string)
 	onUsage   func(chatID, threadID int64)
 	onClear   func(chatID, threadID int64)
 }
@@ -59,6 +60,7 @@ func NewTelegramBot(token string, fileDir string, onMessage func(msg models.Mess
 	dispatcher.AddHandler(handlers.NewCommand("chatid", tb.handleChatID))
 	dispatcher.AddHandler(handlers.NewCommand("cancel", tb.handleCancel))
 	dispatcher.AddHandler(handlers.NewCommand("logs", tb.handleLogs))
+	dispatcher.AddHandler(handlers.NewCommand("effort", tb.handleEffort))
 	dispatcher.AddHandler(handlers.NewCommand("usage", tb.handleUsage))
 	dispatcher.AddHandler(handlers.NewCommand("clear", tb.handleClear))
 	dispatcher.AddHandler(handlers.NewCallback(callbackquery.Equal(callbackClearYes), tb.handleClearConfirm))
@@ -109,6 +111,20 @@ func (tb *TelegramBot) handleLogs(_ *gotgbot.Bot, ctx *ext.Context) error {
 	log.Printf("[recv] chat=%d thread=%d command=/logs", ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId)
 	if tb.onLogs != nil {
 		tb.onLogs(ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId)
+	}
+	return nil
+}
+
+func (tb *TelegramBot) handleEffort(_ *gotgbot.Bot, ctx *ext.Context) error {
+	chatID := ctx.EffectiveChat.Id
+	threadID := ctx.EffectiveMessage.MessageThreadId
+	var level string
+	if args := ctx.Args(); len(args) > 1 {
+		level = args[1]
+	}
+	log.Printf("[recv] chat=%d thread=%d command=/effort level=%q", chatID, threadID, level)
+	if tb.onEffort != nil {
+		tb.onEffort(chatID, threadID, level)
 	}
 	return nil
 }
