@@ -14,10 +14,11 @@ const (
 )
 
 const (
-	EffortLow    = "low"
-	EffortMedium = "medium"
-	EffortHigh   = "high"
-	EffortMax    = "max"
+	EffortDefault = "default"
+	EffortLow     = "low"
+	EffortMedium  = "medium"
+	EffortHigh    = "high"
+	EffortMax     = "max"
 )
 
 type Settings struct {
@@ -38,8 +39,10 @@ func LoadSettings(dataDir string) Settings {
 	if s.StatusLevel != StatusOff && s.StatusLevel != StatusText && s.StatusLevel != StatusVerbose {
 		s.StatusLevel = StatusText
 	}
-	if s.Effort != "" && s.Effort != EffortLow && s.Effort != EffortMedium && s.Effort != EffortHigh && s.Effort != EffortMax {
-		s.Effort = ""
+	if s.Effort == "" {
+		s.Effort = EffortDefault
+	} else if s.Effort != EffortDefault && s.Effort != EffortLow && s.Effort != EffortMedium && s.Effort != EffortHigh && s.Effort != EffortMax {
+		s.Effort = EffortDefault
 	}
 	return s
 }

@@ -74,7 +74,7 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, effort s
 		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
 	}
-	if effort != "" {
+	if effort != EffortDefault {
 		args = append(args, "--effort", effort)
 	}
 

@@ -347,20 +347,13 @@ func (a *App) setEffort(chatID, threadID int64, level string) {
 
 	helpText := "Possible options: <code>low</code>, <code>medium</code>, <code>high</code>, <code>max</code>, <code>default</code> (eg. <code>/effort high</code>)."
 
-	current := a.effortLevel.Load().(string)
-	displayCurrent := current
-	if displayCurrent == "" {
-		displayCurrent = "default"
-	}
-
 	if level == "" {
-		a.bot.SendMessage(chatID, threadID, fmt.Sprintf("Current effort: <code>%s</code>.\n%s", displayCurrent, helpText))
+		current := a.effortLevel.Load().(string)
+		a.bot.SendMessage(chatID, threadID, fmt.Sprintf("Current effort: <code>%s</code>.\n%s", current, helpText))
 		return
 	}
 
-	if level == "default" {
-		level = ""
-	} else if level != EffortLow && level != EffortMedium && level != EffortHigh && level != EffortMax {
+	if level != EffortDefault && level != EffortLow && level != EffortMedium && level != EffortHigh && level != EffortMax {
 		a.bot.SendMessage(chatID, threadID, fmt.Sprintf("🚨 Unknown effort: <code>%s</code>.\n%s", level, helpText))
 		return
 	}
@@ -370,11 +363,7 @@ func (a *App) setEffort(chatID, threadID int64, level string) {
 	s.Effort = level
 	SaveSettings(a.config.DataDir, s)
 
-	display := level
-	if display == "" {
-		display = "default"
-	}
-	a.bot.SendMessage(chatID, threadID, fmt.Sprintf("Current effort: <code>%s</code>.\n%s", display, helpText))
+	a.bot.SendMessage(chatID, threadID, fmt.Sprintf("Current effort: <code>%s</code>.\n%s", level, helpText))
 }
 
 func (a *App) clearSession(chatID, threadID int64) {
