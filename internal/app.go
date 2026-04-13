@@ -33,6 +33,7 @@ type App struct {
 	scheduler   *Scheduler
 	chats       sync.Map // map[int64]*chatState
 	statusLevel atomic.Value
+	effortLevel atomic.Value
 }
 
 func NewApp(cfg Config) *App {
@@ -43,6 +44,7 @@ func NewApp(cfg Config) *App {
 
 	settings := LoadSettings(cfg.DataDir)
 	a.statusLevel.Store(settings.StatusLevel)
+	a.effortLevel.Store(settings.Effort)
 
 	bot, err := NewTelegramBot(cfg.TelegramToken, filepath.Join(cfg.WorkspaceDir, "files"), a.onMessage)
 	if err != nil {
@@ -51,6 +53,7 @@ func NewApp(cfg Config) *App {
 	a.bot = bot
 	a.bot.onCancel = a.cancelAgent
 	a.bot.onLogs = a.toggleLogs
+	a.bot.onEffort = a.setEffort
 	a.bot.onUsage = a.showUsage
 	a.bot.onClear = a.clearSession
 
@@ -211,7 +214,8 @@ func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput)
 		textCallback = onText
 	}
 
-	output, err := a.agentRunner.Run(ctx, input, toolCallback, textCallback)
+	effort := a.effortLevel.Load().(string)
+	output, err := a.agentRunner.Run(ctx, input, effort, toolCallback, textCallback)
 	if output.ModelUsage != nil {
 		a.sessions.UpdateUsage(input.ChatID, input.ThreadID, output.ModelUsage, input.IsolatedSession)
 	}
@@ -334,6 +338,32 @@ func (a *App) toggleLogs(chatID, threadID int64) {
 	case StatusVerbose:
 		a.bot.SendMessage(chatID, threadID, "📢 Logs: verbose (intermediate text and tool use).")
 	}
+}
+
+func (a *App) setEffort(chatID, threadID int64, level string) {
+	if !a.isAllowed(chatID) {
+		return
+	}
+
+	helpText := "Possible options: <code>low</code>, <code>medium</code>, <code>high</code>, <code>max</code>, <code>default</code> (eg. <code>/effort high</code>)."
+
+	if level == "" {
+		current := a.effortLevel.Load().(string)
+		a.bot.SendMessage(chatID, threadID, fmt.Sprintf("Current effort: <code>%s</code>.\n%s", current, helpText))
+		return
+	}
+
+	if level != EffortDefault && level != EffortLow && level != EffortMedium && level != EffortHigh && level != EffortMax {
+		a.bot.SendMessage(chatID, threadID, fmt.Sprintf("🚨 Unknown effort: <code>%s</code>.\n%s", level, helpText))
+		return
+	}
+
+	a.effortLevel.Store(level)
+	s := LoadSettings(a.config.DataDir)
+	s.Effort = level
+	SaveSettings(a.config.DataDir, s)
+
+	a.bot.SendMessage(chatID, threadID, fmt.Sprintf("Current effort: <code>%s</code>.\n%s", level, helpText))
 }
 
 func (a *App) clearSession(chatID, threadID int64) {
