@@ -36,6 +36,15 @@ You MUST NOT read, write, or access any files or directories outside of these th
 - Never use the AskUserQuestion tool. It doesn't work in Telegram. Instead, ask questions directly in your text response
 - The user CANNOT see tool calls, command outputs, or any intermediate results from the CLI. They only see your final text response. When the user asks to see raw output, you MUST include it in your text response
 
+### Thread System Prompt
+
+Each thread may have a per-thread system prompt file at `~/.miniclaw/data/prompts/`. The file for the current thread is determined by the `MINICLAW_CHAT_ID` and `MINICLAW_THREAD_ID` environment variables:
+
+- `{MINICLAW_CHAT_ID}.md` for the default (non-threaded) chat
+- `{MINICLAW_CHAT_ID}_{MINICLAW_THREAD_ID}.md` for a specific thread
+
+When the user asks to update or set their thread's system prompt, read and write this file directly.
+
 ## On-Demand References
 
 Read these files only when the relevant action is needed:

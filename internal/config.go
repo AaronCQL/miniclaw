@@ -28,7 +28,7 @@ func HomeDir() string {
 	}
 
 	dir := filepath.Join(home, ".miniclaw")
-	for _, sub := range []string{"", "data", "data/tasks", "workspace"} {
+	for _, sub := range []string{"", "data", "data/tasks", "data/prompts", "workspace"} {
 		p := filepath.Join(dir, sub)
 		if err := os.MkdirAll(p, 0755); err != nil {
 			log.Fatalf("cannot create directory %s: %v", p, err)
