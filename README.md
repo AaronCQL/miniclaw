@@ -94,7 +94,7 @@ Skills are slash commands the agent follows as expert instructions:
 | `/effort` | View or set the effort level (low, medium, high, max, default) | On demand |
 | `/logs` | Cycle status updates: off, text only, verbose | On demand |
 | `/usage` | Show context window usage and cumulative cost | On demand |
-| `/clear` | Clear context and start a fresh session in the same thread | On demand |
+| `/clear` | Clear chat history and context window for a thread | On demand |
 | `/transcribe` | Transcribe voice messages via Groq Whisper | Auto (on voice message) |
 
 ### AI-Managed Tasks

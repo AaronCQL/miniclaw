@@ -23,7 +23,7 @@ const maxMessageLength = 4096
 const (
 	callbackClearYes = "clear_yes"
 	callbackClearNo  = "clear_no"
-	clearPromptText  = "⚠️ Are you sure you want to clear all context for this thread?"
+	clearPromptText  = "⚠️ Are you sure you want to reset this thread's chat history and context window?"
 )
 
 type TelegramBot struct {
@@ -160,7 +160,7 @@ func (tb *TelegramBot) handleClear(b *gotgbot.Bot, ctx *ext.Context) error {
 func (tb *TelegramBot) handleClearConfirm(b *gotgbot.Bot, ctx *ext.Context) error {
 	log.Printf("[recv] chat=%d thread=%d callback=%s", ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId, callbackClearYes)
 
-	tb.answerCallback(b, ctx, "<i>Context cleared. Next message will start a fresh session.</i>")
+	tb.answerCallback(b, ctx, "<i>Chat history and context window cleared.</i>")
 
 	if tb.onClear != nil {
 		tb.onClear(ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageThreadId)
