@@ -77,8 +77,8 @@ func (r *AgentRunner) Run(ctx context.Context, input models.AgentInput, effort s
 	if effort != EffortDefault {
 		args = append(args, "--effort", effort)
 	}
-	if sp := r.loadThreadPrompt(input.ChatID, input.ThreadID); sp != "" {
-		args = append(args, "--append-system-prompt", sp)
+	if threadPrompt := r.loadThreadPrompt(input.ChatID, input.ThreadID); threadPrompt != "" {
+		args = append(args, "--append-system-prompt", threadPrompt)
 	}
 
 	if input.IsolatedSession {
@@ -298,13 +298,13 @@ func (r *AgentRunner) buildPrompt(input models.AgentInput) string {
 }
 
 func (r *AgentRunner) loadThreadPrompt(chatID, threadID int64) string {
-	var name string
+	var file string
 	if threadID == 0 {
-		name = fmt.Sprintf("%d.md", chatID)
+		file = fmt.Sprintf("%d.md", chatID)
 	} else {
-		name = fmt.Sprintf("%d_%d.md", chatID, threadID)
+		file = fmt.Sprintf("%d_%d.md", chatID, threadID)
 	}
-	data, err := os.ReadFile(filepath.Join(r.config.DataDir, "prompts", name))
+	data, err := os.ReadFile(filepath.Join(r.config.DataDir, "prompts", file))
 	if err != nil {
 		return ""
 	}
