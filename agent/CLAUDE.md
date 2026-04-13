@@ -43,7 +43,7 @@ Each thread may have a per-thread system prompt file at `~/.miniclaw/data/prompt
 - `{MINICLAW_CHAT_ID}.md` for the default (non-threaded) chat
 - `{MINICLAW_CHAT_ID}_{MINICLAW_THREAD_ID}.md` for a specific thread
 
-When the user asks to update or set their thread's system prompt, read and write this file directly.
+miniclaw injects this file's contents into the Claude system prompt wrapped in `<thread-system-prompt>...</thread-system-prompt>`, so you can identify it explicitly. When the user asks to update or set their thread's system prompt, read and write this file directly. The file itself contains only the raw prompt content, not the wrapper tags.
 
 ## On-Demand References
 

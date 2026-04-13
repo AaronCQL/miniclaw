@@ -308,5 +308,9 @@ func (r *AgentRunner) loadThreadPrompt(chatID, threadID int64) string {
 	if err != nil {
 		return ""
 	}
-	return strings.TrimSpace(string(data))
+	prompt := strings.TrimSpace(string(data))
+	if prompt == "" {
+		return ""
+	}
+	return "<thread-system-prompt>\n" + prompt + "\n</thread-system-prompt>"
 }

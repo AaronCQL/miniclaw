@@ -231,6 +231,33 @@ func TestBuildPrompt(t *testing.T) {
 	}
 }
 
+func TestLoadThreadPrompt(t *testing.T) {
+	dataDir := t.TempDir()
+	if err := os.MkdirAll(dataDir+"/prompts", 0755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+
+	r := &AgentRunner{config: Config{DataDir: dataDir}}
+
+	if got := r.loadThreadPrompt(123, 0); got != "" {
+		t.Fatalf("missing prompt = %q, want empty", got)
+	}
+
+	if err := os.WriteFile(dataDir+"/prompts/123_456.md", []byte("  custom instructions\nsecond line  \n"), 0644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	if got, want := r.loadThreadPrompt(123, 456), "<thread-system-prompt>\ncustom instructions\nsecond line\n</thread-system-prompt>"; got != want {
+		t.Fatalf("wrapped prompt = %q, want %q", got, want)
+	}
+
+	if err := os.WriteFile(dataDir+"/prompts/123.md", []byte(" \n\t "), 0644); err != nil {
+		t.Fatalf("WriteFile empty: %v", err)
+	}
+	if got := r.loadThreadPrompt(123, 0); got != "" {
+		t.Fatalf("empty prompt = %q, want empty", got)
+	}
+}
+
 func TestStreamMessageUnmarshalJSON(t *testing.T) {
 	tests := []struct {
 		name      string
