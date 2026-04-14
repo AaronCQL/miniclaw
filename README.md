@@ -12,6 +12,7 @@ A minimal Telegram agent powered by [Claude Code](https://docs.anthropic.com/en/
   - [Manual Setup](#manual-setup)
 - [Features](#features)
   - [Persistent Memory](#persistent-memory)
+  - [System Prompts](#system-prompts)
   - [Extensible Skills](#extensible-skills)
   - [AI-Managed Tasks](#ai-managed-tasks)
   - [Rich Media](#rich-media)
@@ -54,6 +55,7 @@ Once your bot is running, use `/commands` on Telegram to sync the agent's skills
 ## Features
 
 - [🧠 **Persistent Memory**](#persistent-memory): Context-aware sessions per Telegram chat or thread.
+- [🧵 **System Prompts**](#system-prompts): Thread-specific prompts and global prompts.
 - [🤹 **Extensible Skills**](#extensible-skills): Use built-in skills as Telegram slash commands, or ask your agent to build new ones.
 - [📋 **AI-Managed Tasks**](#ai-managed-tasks): Schedule tasks or reminders simply by telling the agent what you need.
 - [📽️ **Rich Media**](#rich-media): Full support for images, documents, and voice messages.
@@ -72,6 +74,19 @@ This is intentionally simple. There's no vector database, no embedding model, no
 - [OpenViking](https://github.com/volcengine/OpenViking): three-tier progressive loading with semantic search. Impressive architecture but requires embedding models, a running server, and heavy dependencies (Python + Go + C++).
 
 Both are worth considering if you need semantic search or more granular recall. miniclaw's approach trades sophistication for minimal operational overhead.
+
+### System Prompts
+
+The global system prompt is located at `agent/CLAUDE.md`. This is where the overall instructions and context for the agent live across all chats/threads.
+
+Additionally, each Telegram chat or thread can have its own extra system prompt in addition to the global one. This allows you to give threads specific/long-lived instructions like "act as my code reviewer" or "answer in a terse legal memo style" without affecting other threads.
+
+At runtime, miniclaw wraps the per-thread system prompts in `<thread-system-prompt>...</thread-system-prompt>` so the agent can distinguish it from the global prompt. To update, simply ask your agent within a thread to do it for you, eg. "update this thread's system prompt to [your new instructions here]".
+
+The per-thread system prompts are stored in `~/.miniclaw/data/prompts/` with the naming convention:
+
+- `{chatID}.md` for a default non-threaded chat
+- `{chatID}_{threadID}.md` for a specific thread
 
 ### Extensible Skills
 
@@ -123,7 +138,7 @@ The repo has two main concerns: the Go application that wraps Claude CLI, and th
 - **`.claude/skills/`**: slash command definitions (eg. `/review`, `/remember`, `/setup`). Each skill is a directory containing a `SKILL.md` file that the agent follows as expert instructions.
 - **`cmd/`** and **`internal/`**: the Go application. Telegram polling, session management, task scheduling, and the Claude CLI runner.
 
-At runtime, all state lives in `~/.miniclaw/`: the `.env` config, session data, scheduled tasks, and a scratch workspace for file operations.
+At runtime, all state lives in `~/.miniclaw/`: the `.env` config, session data, per-thread prompt files, scheduled tasks, and a scratch workspace for file operations.
 
 ## Changelog
 
