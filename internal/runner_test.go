@@ -163,7 +163,7 @@ func TestBuildPrompt(t *testing.T) {
 			now = now.In(loc)
 		}
 	}
-	ts := fmt.Sprintf("[Current time: %s]", now.Format("2006-01-02 15:04 -07:00"))
+	ts := fmt.Sprintf("[Current time: %s]", now.Format("Monday, 2006-01-02 15:04 -07:00"))
 
 	tests := []struct {
 		name  string

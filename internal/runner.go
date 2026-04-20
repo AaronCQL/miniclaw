@@ -279,7 +279,7 @@ func (r *AgentRunner) buildPrompt(input models.AgentInput) string {
 			now = now.In(loc)
 		}
 	}
-	parts = append(parts, fmt.Sprintf("[Current time: %s]", now.Format("2006-01-02 15:04 -07:00")))
+	parts = append(parts, fmt.Sprintf("[Current time: %s]", now.Format("Monday, 2006-01-02 15:04 -07:00")))
 
 	if input.ReplyToContent != "" {
 		parts = append(parts, fmt.Sprintf("[Replying to %s: %s]", input.ReplyToSender, input.ReplyToContent))
