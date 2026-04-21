@@ -28,6 +28,11 @@ func TestFormatTelegramHTML(t *testing.T) {
 			expected: "<s>deleted</s>",
 		},
 		{
+			name:     "single tilde not strikethrough",
+			input:    "~not strikethrough~",
+			expected: "~not strikethrough~",
+		},
+		{
 			name:     "inline code",
 			input:    "`some code`",
 			expected: "<code>some code</code>",

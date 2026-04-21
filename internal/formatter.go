@@ -9,12 +9,54 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	extast "github.com/yuin/goldmark/extension/ast"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 )
+
+// strikethroughDelimiter implements parser.DelimiterProcessor for ~~ strikethrough.
+type strikethroughDelimiter struct{}
+
+func (p *strikethroughDelimiter) IsDelimiter(b byte) bool              { return b == '~' }
+func (p *strikethroughDelimiter) CanOpenCloser(o, c *parser.Delimiter) bool { return o.Char == c.Char }
+func (p *strikethroughDelimiter) OnMatch(int) ast.Node                 { return extast.NewStrikethrough() }
+
+// doubleStrikethroughParser requires ~~ (not single ~) for strikethrough.
+type doubleStrikethroughParser struct{}
+
+func (s *doubleStrikethroughParser) Trigger() []byte { return []byte{'~'} }
+
+func (s *doubleStrikethroughParser) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
+	before := block.PrecendingCharacter()
+	line, segment := block.PeekLine()
+	node := parser.ScanDelimiter(line, before, 2, &strikethroughDelimiter{})
+	if node == nil || node.OriginalLength > 2 || before == '~' {
+		return nil
+	}
+	node.Segment = segment.WithStop(segment.Start + node.OriginalLength)
+	block.Advance(node.OriginalLength)
+	pc.PushDelimiter(node)
+	return node
+}
+
+func (s *doubleStrikethroughParser) CloseBlock(parent ast.Node, pc parser.Context) {}
 
 var md = goldmark.New(
 	goldmark.WithExtensions(
-		extension.GFM,
+		extension.Linkify,
+		extension.Table,
+		extension.TaskList,
+	),
+	goldmark.WithParserOptions(
+		parser.WithInlineParsers(
+			util.Prioritized(&doubleStrikethroughParser{}, 500),
+		),
+	),
+	goldmark.WithRendererOptions(
+		renderer.WithNodeRenderers(
+			util.Prioritized(extension.NewStrikethroughHTMLRenderer(), 500),
+		),
 	),
 )
 
