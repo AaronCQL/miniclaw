@@ -32,6 +32,7 @@ type App struct {
 	sessions    *SessionStore
 	scheduler   *Scheduler
 	chats       sync.Map // map[int64]*chatState
+	outboxMu    sync.Mutex
 	statusLevel atomic.Value
 	effortLevel atomic.Value
 }
@@ -276,23 +277,27 @@ func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput)
 }
 
 func (a *App) sendAgentOutput(chatID, threadID int64, result string) {
+	// Mutex prevents concurrent goroutines from reading and sending
+	// the same outbox entries before either removes the file.
+	a.outboxMu.Lock()
 	outboxPath := filepath.Join(a.config.HomeDir, "outbox.json")
 	entries, err := ReadOutbox(outboxPath)
 	if err != nil {
 		log.Printf("[outbox] chat=%d error reading outbox: %v", chatID, err)
 	}
-
 	if len(entries) > 0 {
-		for _, entry := range entries {
-			if err := ValidateOutboxEntry(entry); err != nil {
-				log.Printf("[outbox] chat=%d skipping %s: %v", chatID, entry.Path, err)
-				continue
-			}
-			if err := a.bot.SendFile(chatID, threadID, entry.Path, FormatTelegramHTML(entry.Caption)); err != nil {
-				log.Printf("[outbox] chat=%d failed to send %s: %v", chatID, entry.Path, err)
-			}
-		}
 		RemoveOutbox(outboxPath)
+	}
+	a.outboxMu.Unlock()
+
+	for _, entry := range entries {
+		if err := ValidateOutboxEntry(entry); err != nil {
+			log.Printf("[outbox] chat=%d skipping %s: %v", chatID, entry.Path, err)
+			continue
+		}
+		if err := a.bot.SendFile(chatID, threadID, entry.Path, FormatTelegramHTML(entry.Caption)); err != nil {
+			log.Printf("[outbox] chat=%d failed to send %s: %v", chatID, entry.Path, err)
+		}
 	}
 
 	if err := a.bot.SendMessage(chatID, threadID, FormatTelegramHTML(result)); err != nil {
