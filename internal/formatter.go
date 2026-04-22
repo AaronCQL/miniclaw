@@ -18,9 +18,9 @@ import (
 // strikethroughDelimiter implements parser.DelimiterProcessor for ~~ strikethrough.
 type strikethroughDelimiter struct{}
 
-func (p *strikethroughDelimiter) IsDelimiter(b byte) bool              { return b == '~' }
+func (p *strikethroughDelimiter) IsDelimiter(b byte) bool                   { return b == '~' }
 func (p *strikethroughDelimiter) CanOpenCloser(o, c *parser.Delimiter) bool { return o.Char == c.Char }
-func (p *strikethroughDelimiter) OnMatch(int) ast.Node                 { return extast.NewStrikethrough() }
+func (p *strikethroughDelimiter) OnMatch(int) ast.Node                      { return extast.NewStrikethrough() }
 
 // doubleStrikethroughParser requires ~~ (not single ~) for strikethrough.
 type doubleStrikethroughParser struct{}
