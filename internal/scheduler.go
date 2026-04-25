@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"miniclaw/internal/models"
@@ -50,6 +51,7 @@ func (s *Scheduler) executeDueTasks(ctx context.Context) {
 	}
 
 	now := time.Now()
+	var wg sync.WaitGroup
 	for _, task := range tasks {
 		if task.Status != "active" || task.NextRun == nil {
 			continue
@@ -78,28 +80,34 @@ func (s *Scheduler) executeDueTasks(ctx context.Context) {
 
 		log.Printf("[task] executing %s (chat=%d schedule=%s/%s)", task.Filename, task.ChatID, task.ScheduleType, task.ScheduleValue)
 
-		_, err = s.runFunc(ctx, models.AgentInput{
-			ChatID:          task.ChatID,
-			ThreadID:        task.ThreadID,
-			Prompt:          task.Prompt,
-			IsolatedSession: task.IsolatedSession,
-			TaskName:        task.Filename,
-		})
+		wg.Add(1)
+		go func(task models.Task) {
+			defer wg.Done()
 
-		if err != nil {
-			log.Printf("[task] error running %s: %v", task.Filename, err)
-		}
+			_, err := s.runFunc(ctx, models.AgentInput{
+				ChatID:          task.ChatID,
+				ThreadID:        task.ThreadID,
+				Prompt:          task.Prompt,
+				IsolatedSession: task.IsolatedSession,
+				TaskName:        task.Filename,
+			})
 
-		newNextRun := s.calculateNextRun(task)
-		if newNextRun == nil {
-			log.Printf("[task] completed %s (chat=%d prompt=%q), deleting", task.Filename, task.ChatID, task.Prompt)
-			s.deleteTask(task)
-		} else {
-			log.Printf("[task] rescheduled %s next_run=%s", task.Filename, *newNextRun)
-			task.NextRun = newNextRun
-			s.saveTask(task)
-		}
+			if err != nil {
+				log.Printf("[task] error running %s: %v", task.Filename, err)
+			}
+
+			newNextRun := s.calculateNextRun(task)
+			if newNextRun == nil {
+				log.Printf("[task] completed %s (chat=%d prompt=%q), deleting", task.Filename, task.ChatID, task.Prompt)
+				s.deleteTask(task)
+			} else {
+				log.Printf("[task] rescheduled %s next_run=%s", task.Filename, *newNextRun)
+				task.NextRun = newNextRun
+				s.saveTask(task)
+			}
+		}(task)
 	}
+	wg.Wait()
 }
 
 func (s *Scheduler) loadTasks() ([]models.Task, error) {
