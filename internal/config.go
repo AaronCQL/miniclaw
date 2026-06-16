@@ -19,6 +19,7 @@ type Config struct {
 	TelegramToken     string
 	AllowedChatIDs    []int64
 	SchedulerInterval time.Duration
+	RichMessages      bool
 }
 
 func HomeDir() string {
@@ -88,5 +89,16 @@ func LoadConfig(homeDir string, agentDir string) Config {
 		TelegramToken:     token,
 		AllowedChatIDs:    allowedIDs,
 		SchedulerInterval: 10 * time.Second,
+		RichMessages:      richMessagesEnabled(),
+	}
+}
+
+// Rich messages are on by default; MINICLAW_RICH_MESSAGES=false/0/off/no opts out.
+func richMessagesEnabled() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("MINICLAW_RICH_MESSAGES"))) {
+	case "false", "0", "off", "no":
+		return false
+	default:
+		return true
 	}
 }

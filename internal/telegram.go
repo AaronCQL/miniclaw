@@ -1,14 +1,17 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"miniclaw/internal/models"
 
@@ -20,6 +23,9 @@ import (
 
 const maxMessageLength = 4096
 
+// maxRichMessageLength is the Bot API 10.1 rich message cap, in UTF-8 characters.
+const maxRichMessageLength = 32768
+
 const (
 	callbackClearYes = "clear_yes"
 	callbackClearNo  = "clear_no"
@@ -27,15 +33,16 @@ const (
 )
 
 type TelegramBot struct {
-	bot       *gotgbot.Bot
-	updater   *ext.Updater
-	fileDir   string
-	onMessage func(msg models.Message)
-	onCancel  func(chatID, threadID int64)
-	onLogs    func(chatID, threadID int64)
-	onEffort  func(chatID, threadID int64, level string)
-	onUsage   func(chatID, threadID int64)
-	onClear   func(chatID, threadID int64)
+	bot          *gotgbot.Bot
+	updater      *ext.Updater
+	fileDir      string
+	richMessages bool
+	onMessage    func(msg models.Message)
+	onCancel     func(chatID, threadID int64)
+	onLogs       func(chatID, threadID int64)
+	onEffort     func(chatID, threadID int64, level string)
+	onUsage      func(chatID, threadID int64)
+	onClear      func(chatID, threadID int64)
 }
 
 func NewTelegramBot(token string, fileDir string, onMessage func(msg models.Message)) (*TelegramBot, error) {
@@ -324,18 +331,38 @@ func (tb *TelegramBot) SendTyping(chatID, threadID int64) {
 	tb.bot.SendChatAction(chatID, "typing", opts)
 }
 
-// Returns 0 on error (best-effort).
-func (tb *TelegramBot) SendStatusMessage(chatID, threadID int64, text string) int64 {
+// SendStatusMessage sends the status bubble as a rich message so it shares the
+// final reply's formatting (no mid-run format jump) and the larger rich limit.
+// Returns 0 on error.
+func (tb *TelegramBot) SendStatusMessage(chatID, threadID int64, html string) int64 {
+	if tb.richMessages {
+		id, err := tb.sendRich(chatID, threadID, html)
+		if err == nil {
+			return id
+		}
+		log.Printf("[send] chat=%d rich status failed, falling back to HTML: %v", chatID, err)
+	}
 	opts := &gotgbot.SendMessageOpts{ParseMode: "HTML"}
 	if threadID > 0 {
 		opts.MessageThreadId = threadID
 	}
-	msg, err := tb.bot.SendMessage(chatID, text, opts)
+	msg, err := tb.bot.SendMessage(chatID, richBreaksToNewlines(html), opts)
 	if err != nil {
 		log.Printf("[send] chat=%d failed to send status message: %v", chatID, err)
 		return 0
 	}
 	return msg.MessageId
+}
+
+func (tb *TelegramBot) EditStatusMessage(chatID, messageID int64, html string) {
+	if tb.richMessages {
+		err := tb.EditRichMessage(chatID, messageID, html)
+		if err == nil {
+			return
+		}
+		log.Printf("[send] chat=%d msg=%d rich status edit failed, falling back to HTML: %v", chatID, messageID, err)
+	}
+	tb.EditMessage(chatID, messageID, richBreaksToNewlines(html))
 }
 
 // Best-effort: logs errors but doesn't return them.
@@ -414,6 +441,77 @@ func (tb *TelegramBot) SendMessage(chatID, threadID int64, text string) error {
 				return fmt.Errorf("sending message: %w", err)
 			}
 		}
+	}
+	return nil
+}
+
+// richBreaksToNewlines converts the <br> line breaks the status bubble emits
+// back into the "\n" newlines legacy HTML parse mode understands. It is NOT a
+// general Rich-HTML downgrader: it only handles <br>, which is safe solely
+// because the status bubble is built from a narrow, otherwise-legacy-safe tag
+// vocabulary (<i>, <b>, <code>, emoji). Do not feed it full
+// FormatTelegramRichHTML output - its structural tags would survive and break
+// the legacy HTML parse.
+var richBreakReplacer = strings.NewReplacer("<br>", "\n", "<br/>", "\n", "<br />", "\n")
+
+func richBreaksToNewlines(s string) string { return richBreakReplacer.Replace(s) }
+
+// withinRichLimit counts UTF-8 characters, the unit Telegram's cap uses, not bytes.
+func withinRichLimit(s string) bool {
+	return utf8.RuneCountInString(s) <= maxRichMessageLength
+}
+
+func richMessageParams(html string) (map[string]string, error) {
+	richMessage, err := json.Marshal(map[string]string{"html": html})
+	if err != nil {
+		return nil, fmt.Errorf("marshalling rich message: %w", err)
+	}
+	return map[string]string{"rich_message": string(richMessage)}, nil
+}
+
+// sendRich uses gotgbot's generic Request escape hatch because the typed
+// SendRichMessage isn't generated yet; swap to it once it lands upstream.
+func (tb *TelegramBot) sendRich(chatID, threadID int64, html string) (int64, error) {
+	params, err := richMessageParams(html)
+	if err != nil {
+		return 0, err
+	}
+	params["chat_id"] = strconv.FormatInt(chatID, 10)
+	if threadID > 0 {
+		params["message_thread_id"] = strconv.FormatInt(threadID, 10)
+	}
+	res, err := tb.bot.Request("sendRichMessage", params, nil, nil)
+	if err != nil {
+		return 0, fmt.Errorf("sendRichMessage: %w", err)
+	}
+	var sent struct {
+		MessageID int64 `json:"message_id"`
+	}
+	_ = json.Unmarshal(res, &sent)
+	log.Printf("[send] chat=%d thread=%d rich len=%d", chatID, threadID, len(html))
+	return sent.MessageID, nil
+}
+
+func (tb *TelegramBot) SendRichMessage(chatID, threadID int64, html string) error {
+	if html == "" {
+		return nil
+	}
+	_, err := tb.sendRich(chatID, threadID, html)
+	return err
+}
+
+func (tb *TelegramBot) EditRichMessage(chatID, messageID int64, html string) error {
+	if html == "" {
+		return nil
+	}
+	params, err := richMessageParams(html)
+	if err != nil {
+		return err
+	}
+	params["chat_id"] = strconv.FormatInt(chatID, 10)
+	params["message_id"] = strconv.FormatInt(messageID, 10)
+	if _, err := tb.bot.Request("editMessageText", params, nil, nil); err != nil {
+		return fmt.Errorf("editMessageText(rich): %w", err)
 	}
 	return nil
 }

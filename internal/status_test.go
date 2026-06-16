@@ -116,7 +116,7 @@ func TestStatusTracker_Render(t *testing.T) {
 	s.Add("Bash", "<code>go test</code>")
 	s.Add("WebSearch", "golang errors")
 
-	want := "📄 <code>main.go</code>\n⚡ <code>go test</code>\n🌐 golang errors 🟡"
+	want := "📄 <code>main.go</code><br>⚡ <code>go test</code><br>🌐 golang errors 🟡"
 	if got := s.Render(); got != want {
 		t.Errorf("Render() =\n%s\nwant:\n%s", got, want)
 	}
@@ -127,7 +127,7 @@ func TestStatusTracker_RenderDone(t *testing.T) {
 	s.Add("Read", "<code>main.go</code>")
 	s.Add("Bash", "<code>go test</code>")
 
-	want := "📄 <code>main.go</code>\n⚡ <code>go test</code>"
+	want := "📄 <code>main.go</code><br>⚡ <code>go test</code>"
 	if got := s.RenderDone(); got != want {
 		t.Errorf("RenderDone() =\n%q\nwant:\n%q", got, want)
 	}
@@ -138,7 +138,7 @@ func TestStatusTracker_RenderFinal(t *testing.T) {
 	s.Add("Read", "<code>main.go</code>")
 	s.Add("Bash", "<code>go test</code>")
 
-	want := "📄 <code>main.go</code>\n⚡ <code>go test</code>"
+	want := "📄 <code>main.go</code><br>⚡ <code>go test</code>"
 	if got := s.RenderFinal(); got != want {
 		t.Errorf("RenderFinal() =\n%q\nwant:\n%q", got, want)
 	}
@@ -170,7 +170,7 @@ func TestStatusTracker_TextAfterTool(t *testing.T) {
 	s.Add("Read", "<code>app.go</code>")
 	s.AddText("I see the issue")
 
-	want := "📄 <code>app.go</code>\n\n<i>I see the issue</i>"
+	want := "📄 <code>app.go</code><br><br><i>I see the issue</i>"
 	if got := s.Render(); got != want {
 		t.Errorf("Render() = %q, want %q", got, want)
 	}
@@ -181,7 +181,7 @@ func TestStatusTracker_ToolAfterText(t *testing.T) {
 	s.AddText("Let me check")
 	s.Add("Read", "<code>app.go</code>")
 
-	want := "<i>Let me check</i>\n📄 <code>app.go</code> 🟡"
+	want := "<i>Let me check</i><br>📄 <code>app.go</code> 🟡"
 	if got := s.Render(); got != want {
 		t.Errorf("Render() = %q, want %q", got, want)
 	}
@@ -192,7 +192,7 @@ func TestStatusTracker_MultipleTexts(t *testing.T) {
 	s.AddText("First thought")
 	s.AddText("Second thought")
 
-	want := "<i>First thought</i>\n\n<i>Second thought</i>"
+	want := "<i>First thought</i><br><br><i>Second thought</i>"
 	if got := s.Render(); got != want {
 		t.Errorf("Render() = %q, want %q", got, want)
 	}
@@ -229,7 +229,7 @@ func TestStatusTracker_DropText_NoMatch(t *testing.T) {
 
 	s.DropText("different text")
 
-	want := "📄 <code>app.go</code>\n\n<i>intermediate text</i>"
+	want := "📄 <code>app.go</code><br><br><i>intermediate text</i>"
 	if got := s.RenderFinal(); got != want {
 		t.Errorf("RenderFinal() = %q, want %q", got, want)
 	}
@@ -238,7 +238,7 @@ func TestStatusTracker_DropText_NoMatch(t *testing.T) {
 func TestStatusTracker_Truncation(t *testing.T) {
 	s := newStatusTracker()
 	// Each entry is unique (different index) to avoid dedup, ~70 chars each
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 800; i++ {
 		s.Add("Bash", fmt.Sprintf("<code>command-%03d-with-a-long-argument-to-fill-space</code>", i))
 	}
 

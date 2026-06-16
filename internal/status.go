@@ -63,14 +63,17 @@ func (s *statusTracker) AddText(text string) {
 	s.entries = append(s.entries, statusEntry{emoji: "", label: text})
 }
 
-const maxStatusLen = 4000
+// maxStatusLen leaves headroom under the 32768 rich cap; the byte count below
+// only approximates the character count Telegram enforces.
+const maxStatusLen = 32000
 
 func (s *statusTracker) renderEntries(showSpinner bool) string {
 	if len(s.entries) == 0 {
 		return ""
 	}
 
-	// Build lines backwards, stopping when we'd exceed the limit
+	// Build lines backwards, stopping when we'd exceed the limit. Lines are
+	// joined with <br> because rich HTML collapses literal newlines.
 	lines := make([]string, 0, len(s.entries))
 	total := 0
 	for i := len(s.entries) - 1; i >= 0; i-- {
@@ -83,7 +86,10 @@ func (s *statusTracker) renderEntries(showSpinner bool) string {
 			if strings.HasSuffix(label, ":") {
 				label = label[:len(label)-1] + "."
 			}
-			line = "<i>" + FormatTelegramHTML(label) + "</i>"
+			// Intermediate text is an ephemeral, possibly partial stream slice;
+			// keep it as escaped inline italic (no block markdown) so it's
+			// always valid rich and survives mid-stream truncation.
+			line = "<i>" + strings.ReplaceAll(escapeHTML(label), "\n", "<br>") + "</i>"
 		}
 
 		// Last entry gets spinner; text entries get a blank line before them
@@ -91,10 +97,10 @@ func (s *statusTracker) renderEntries(showSpinner bool) string {
 			line += " 🟡"
 		}
 		if e.emoji == "" && i > 0 {
-			line = "\n" + line
+			line = "<br>" + line
 		}
 
-		cost := len(line) + 1 // +1 for newline separator
+		cost := len(line) + 4 // +4 for the <br> separator
 		if total+cost > maxStatusLen-40 {
 			break
 		}
@@ -110,9 +116,9 @@ func (s *statusTracker) renderEntries(showSpinner bool) string {
 	skipped := len(s.entries) - len(lines)
 	var b strings.Builder
 	if skipped > 0 {
-		b.WriteString(fmt.Sprintf("... %d earlier entries\n\n", skipped))
+		b.WriteString(fmt.Sprintf("... %d earlier entries<br><br>", skipped))
 	}
-	b.WriteString(strings.Join(lines, "\n"))
+	b.WriteString(strings.Join(lines, "<br>"))
 	return b.String()
 }
 

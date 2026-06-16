@@ -52,6 +52,7 @@ func NewApp(cfg Config) *App {
 		log.Fatalf("failed to create telegram bot: %v", err)
 	}
 	a.bot = bot
+	a.bot.richMessages = cfg.RichMessages
 	a.bot.onCancel = a.cancelAgent
 	a.bot.onLogs = a.toggleLogs
 	a.bot.onEffort = a.setEffort
@@ -174,7 +175,7 @@ func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput)
 			return
 		}
 		if msgID != 0 {
-			a.bot.EditMessage(input.ChatID, msgID, text)
+			a.bot.EditStatusMessage(input.ChatID, msgID, text)
 		} else {
 			mu.Lock()
 			if statusMsgID == 0 {
@@ -232,7 +233,7 @@ func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput)
 		if ctx.Err() == context.Canceled {
 			log.Printf("agent cancelled for chat %d thread %d", input.ChatID, input.ThreadID)
 			if statusMsgID != 0 {
-				a.bot.EditMessage(input.ChatID, statusMsgID, tracker.RenderDone()+"❌ Cancelled")
+				a.bot.EditStatusMessage(input.ChatID, statusMsgID, tracker.RenderDone()+"<br>❌ Cancelled")
 			}
 			if input.MessageID != 0 {
 				a.bot.SendReply(input.ChatID, input.ThreadID, input.MessageID, "Cancelled.")
@@ -241,7 +242,7 @@ func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput)
 		}
 		log.Printf("agent error for chat %d thread %d: %v", input.ChatID, input.ThreadID, err)
 		if statusMsgID != 0 {
-			a.bot.EditMessage(input.ChatID, statusMsgID, tracker.RenderDone()+"❌ Error")
+			a.bot.EditStatusMessage(input.ChatID, statusMsgID, tracker.RenderDone()+"<br>❌ Error")
 		}
 		var errMsg string
 		if output.Error != "" {
@@ -261,10 +262,10 @@ func (a *App) runAgentWithFeedback(ctx context.Context, input models.AgentInput)
 	if statusMsgID != 0 {
 		tracker.DropText(output.Result)
 		if final := tracker.RenderFinal(); final != "" {
-			a.bot.EditMessage(input.ChatID, statusMsgID, final)
+			a.bot.EditStatusMessage(input.ChatID, statusMsgID, final)
 		} else if output.Result != "" {
 			// Status only had the final response - edit it to become the result
-			a.bot.EditMessage(input.ChatID, statusMsgID, FormatTelegramHTML(output.Result))
+			a.editResult(input.ChatID, statusMsgID, output.Result)
 			output.Result = ""
 		}
 	}
@@ -300,9 +301,37 @@ func (a *App) sendAgentOutput(chatID, threadID int64, result string) {
 		}
 	}
 
+	a.sendResult(chatID, threadID, result)
+}
+
+// sendResult prefers a rich message, degrading to the legacy chunked HTML send
+// when rich is disabled, over the length cap, or rejected by Telegram.
+func (a *App) sendResult(chatID, threadID int64, result string) {
+	if a.config.RichMessages {
+		if rich := FormatTelegramRichHTML(result); withinRichLimit(rich) {
+			err := a.bot.SendRichMessage(chatID, threadID, rich)
+			if err == nil {
+				return
+			}
+			log.Printf("[send] chat=%d rich message failed, falling back to HTML: %v", chatID, err)
+		}
+	}
 	if err := a.bot.SendMessage(chatID, threadID, FormatTelegramHTML(result)); err != nil {
 		log.Printf("error sending message to chat %d: %v", chatID, err)
 	}
+}
+
+func (a *App) editResult(chatID, messageID int64, result string) {
+	if a.config.RichMessages {
+		if rich := FormatTelegramRichHTML(result); withinRichLimit(rich) {
+			err := a.bot.EditRichMessage(chatID, messageID, rich)
+			if err == nil {
+				return
+			}
+			log.Printf("[send] chat=%d rich edit failed, falling back to HTML: %v", chatID, err)
+		}
+	}
+	a.bot.EditMessage(chatID, messageID, FormatTelegramHTML(result))
 }
 
 func (a *App) cancelAgent(chatID, threadID int64) {
